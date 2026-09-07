@@ -100,5 +100,5 @@ Neste projeto, nosso objetivo é explorar e transformar dados econômicos públi
 | Gabriel Tase Telmo |  Scrum Team | https://github.com/gabrieltase | https://www.linkedin.com/in/gabriel-tase-telmo-1630a4431/ |
 | Igor Makoto Hoshino |  Scrum Team  | https://github.com/igormakoto | https://www.linkedin.com/in/igor-makoto-57198b270/ ||
 | Isadora de Sousa Fanti |  Scrum Team  | https://github.com/zzadoraa | https://www.linkedin.com/in/isadora-fanti-543262286/ |
-| Júlio Ferreira Siqueira dos Santos |  Scrum Team  | [](https://www.google.com/search?q=link-github) | [](https://www.google.com/search?q=link-linkedin) |
+| Júlio Ferreira Siqueira dos Santos |  Scrum Team  | https://github.com/JulioFSSantos4645 | https://www.linkedin.com/in/julio-ferreira-344a09434/ |
 | Pedro Aurélio Freitas Lemos dos Santos Lira |  Scrum Team  | [](https://www.google.com/search?q=link-github) | [](https://www.google.com/search?q=link-linkedin) |
