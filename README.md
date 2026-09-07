@@ -13,7 +13,7 @@ Neste projeto, nosso objetivo é explorar e transformar dados econômicos públi
 
 Abaixo está o Product Backlog ordenado, detalhando as histórias de usuário separadas pelas Sprints em que serão executadas, juntamente com suas respectivas pontuações de esforço estimadas pela equipe[cite: 1, 2].
 
-| ID | Sprint | Prioridade | User Story | Critérios de Aceite (Definição de Pronto) | Est. |
+| ID | Sprint | Prioridade | User Story | Critérios de Aceite (Definition Of Done) | Est. |
 | :--- | :---: | :---: | :--- | :--- | :---: |
 | **US01** | 1 | Alta | **Como analista de crédito**, gostaria de coletar dados do BCB (inadimplência, ticket, etc.) e integrar bases de dados públicos, para que a análise reflita o real comprometimento financeiro da região. | - Acesso direto via Colab.<br>- Quebra de faixas de atraso (curta e longa).<br>- Integração de fontes sobre apostas (Bets). | 5 |
 | **US02** | 1 | Alta | **Como analista de dados**, gostaria que os indicadores estivessem padronizados e limpos, diferenciando dívida saudável de crítica, para garantir a confiabilidade dos cálculos do Score. | - Limpar dados nulos e valores absurdos (infinitos).<br>- Converter valores monetários de vírgula para ponto.<br>- Classificar dívida imobiliária (saudável) vs. consumo/Bets (crítica). | 8 |
