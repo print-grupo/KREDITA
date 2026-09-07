@@ -1,4 +1,3 @@
-
 # Kredita
 
 ## Descrição do Desafio
@@ -29,15 +28,13 @@ Abaixo está o Product Backlog ordenado, detalhando as histórias de usuário se
 
 ---
 
-
-
 ## Sprints e Entregas
 
 | Período da Sprint | Documentação da Sprint | Vídeo do Incremento (YouTube) |
 | --- | --- | --- |
-| DD/MM/AAAA - DD/MM/AAAA | [Documentação Sprint 1](https://www.google.com/search?q=link-para-doc) | [Assistir no YouTube](https://www.google.com/search?q=link-para-video) |
-| DD/MM/AAAA - DD/MM/AAAA | [Documentação Sprint 2](https://www.google.com/search?q=link-para-doc) | [Assistir no YouTube](https://www.google.com/search?q=link-para-video) |
-| DD/MM/AAAA - DD/MM/AAAA | [Documentação Sprint 3](https://www.google.com/search?q=link-para-doc) | [Assistir no YouTube](https://www.google.com/search?q=link-para-video) |
+| 07/09/2026 - 27/09/2026 | [Documentação Sprint 1](https://www.google.com/search?q=link-para-doc) | [Assistir no YouTube](https://www.google.com/search?q=link-para-video) |
+| 05/10/2026 - 25/10/2026 | [Documentação Sprint 2](https://www.google.com/search?q=link-para-doc) | [Assistir no YouTube](https://www.google.com/search?q=link-para-video) |
+| 02/11/2026 - 22/11/2026 | [Documentação Sprint 3](https://www.google.com/search?q=link-para-doc) | [Assistir no YouTube](https://www.google.com/search?q=link-para-video) |
 
 ---
 
@@ -47,63 +44,6 @@ Abaixo está o Product Backlog ordenado, detalhando as histórias de usuário se
 * **Frameworks:** [Ex: React, Node.js, FastAPI]
 * **Banco de Dados:** [Ex: PostgreSQL, MongoDB]
 * **Ferramentas e DevOps:** [Ex: Git, Docker, Figma, GitHub Actions]
-
----
-
-## Estrutura do Projeto
-
-```text
-nome-do-projeto/
-├── .github/workflows/       # Configuração de CI/CD
-├── docs/                    # Pasta de documentação detalhada
-├── src/                     # Código-fonte da aplicação
-│   ├── controllers/
-│   ├── models/
-│   └── views/
-├── .gitignore
-├── package.json (ou requirements.txt)
-└── README.md
-
-```
-
----
-
-## Como Executar, Usar e Testar o Projeto
-
-### Pré-requisitos
-
-* [Ex: Node.js instalado na versão 18+]
-* [Ex: Git instalado]
-
-### Instalação e Execução
-
-```bash
-# Clone este repositório
-git clone [https://github.com/seu-usuario/nome-do-projeto.git](https://github.com/seu-usuario/nome-do-projeto.git)
-
-# Acesse a pasta do projeto
-cd nome-do-projeto
-
-# Instale as dependências
-npm install
-
-# Execute o projeto
-npm run dev
-
-```
-
-### Executando Testes
-
-```bash
-npm test
-
-```
-
----
-
-## Pasta de Documentação
-
-Acesse a [Pasta de Documentação](https://www.google.com/search?q=./docs) para verificar artefatos adicionais, diagramas de arquitetura e modelos de dados.
 
 ---
 
@@ -129,17 +69,13 @@ Acesse a [Pasta de Documentação](https://www.google.com/search?q=./docs) para 
 * *DoR:* Histórias iniciais validadas pelo PO.
 * *DoD:* MVP funcional rodando em ambiente de desenvolvimento.
 
-
 * **Sprint 2:**
 * *DoR:* Contratos de API e protótipos de tela aprovados.
 * *DoD:* Testes de integração automatizados e funcionalidades integradas.
 
-
 * **Sprint 3:**
 * *DoR:* Casos de teste de aceitação definidos.
 * *DoD:* Sistema estabilizado, revisado e pronto para homologação.
-
-
 
 ---
 
@@ -155,12 +91,6 @@ Acesse a [Pasta de Documentação](https://www.google.com/search?q=./docs) para 
 ## Manual de Usuário
 
 [Descreva aqui o passo a passo de como o usuário final deve navegar, fazer login, interagir com a interface e utilizar as principais funcionalidades do sistema para atingir seus objetivos.]
-
----
-
-## Manual de Instalação
-
-[Descreva aqui o passo a passo detalhado para administradores ou equipe técnica realizarem o deploy, configurar variáveis de ambiente e subir a aplicação em servidores de homologação ou produção.]
 
 ---
 
