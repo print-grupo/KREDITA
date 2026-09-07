@@ -8,10 +8,6 @@ Neste projeto, nosso objetivo é explorar e transformar dados econômicos públi
 
 # Product Backlog
 
-# Product Backlog - RealIT (Com Estimativas)
-
-Abaixo está o Product Backlog ordenado, detalhando as histórias de usuário separadas pelas Sprints em que serão executadas, juntamente com suas respectivas pontuações de esforço estimadas pela equipe[cite: 1, 2].
-
 | ID | Sprint | Prioridade | User Story | Critérios de Aceite (Definition Of Done) | Est. |
 | :--- | :---: | :---: | :--- | :--- | :---: |
 | **US01** | 1 | Alta | **Como analista de crédito**, gostaria de coletar dados do BCB (inadimplência, ticket, etc.) e integrar bases de dados públicos, para que a análise reflita o real comprometimento financeiro da região. | - Acesso direto via Colab.<br>- Quebra de faixas de atraso (curta e longa).<br>- Integração de fontes sobre apostas (Bets). | 5 |
