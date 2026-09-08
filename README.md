@@ -94,11 +94,11 @@ Neste projeto, nosso objetivo é explorar e transformar dados econômicos públi
 
 | Nome Completo | Papel | GitHub | LinkedIn |
 | --- | --- | --- | --- |
-| Karam Diniz Coutinho |  Product Owner | https://github.com/karam-diniz | www.linkedin.com/in/karam-diniz |
-| Davi Ribeiro André  | Scrum Master | https://github.com/DaviRibeiroAndre | https://www.linkedin.com/in/davi-ribeiro-andr%C3%A9-a3729b1b3/ |
-| Gabriel Herzer Gaspary | Scrum Team | https://github.com/GabrielHerzer | https://www.linkedin.com/in/gabriel-herzer-133220352/ |
-| Gabriel Tase Telmo |  Scrum Team | https://github.com/gabrieltase | https://www.linkedin.com/in/gabriel-tase-telmo-1630a4431/ |
-| Igor Makoto Hoshino |  Scrum Team  | https://github.com/igormakoto | https://www.linkedin.com/in/igor-makoto-57198b270/ ||
-| Isadora de Sousa Fanti |  Scrum Team  | https://github.com/zzadoraa | https://www.linkedin.com/in/isadora-fanti-543262286/ |
-| Júlio Ferreira Siqueira dos Santos |  Scrum Team  | https://github.com/JulioFSSantos4645 | https://www.linkedin.com/in/julio-ferreira-344a09434/ |
-| Pedro Aurélio Freitas Lemos dos Santos Lira |  Scrum Team  | [](https://www.google.com/search?q=link-github) | [](https://www.google.com/search?q=link-linkedin) |
+| Karam Diniz Coutinho |  Product Owner | [![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/karam-diniz) | [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white)](www.linkedin.com/in/karam-diniz) |
+| Davi Ribeiro André  | Scrum Master | [![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/DaviRibeiroAndre) |[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/davi-ribeiro-andr%C3%A9-a3729b1b3/) |
+| Gabriel Herzer Gaspary | Scrum Team | [![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/GabrielHerzer) | [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/gabriel-herzer-133220352/) |
+| Gabriel Tase Telmo |  Scrum Team | [![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/gabrieltase) | [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/gabriel-tase-telmo-1630a4431/) |
+| Igor Makoto Hoshino |  Scrum Team  | [![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/igormakoto) | [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/igor-makoto-57198b270/) ||
+| Isadora de Sousa Fanti |  Scrum Team  | [![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/zzadoraa) | [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/isadora-fanti-543262286/) |
+| Júlio Ferreira Siqueira dos Santos |  Scrum Team  | https://github.com/JulioFSSantos4645 | [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/julio-ferreira-344a09434/) |
+| Pedro Aurélio Freitas Lemos dos Santos Lira |  Scrum Team  | [](https://www.google.com/search?q=link-github) | [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white)] |
