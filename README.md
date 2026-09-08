@@ -95,7 +95,7 @@ Neste projeto, nosso objetivo é explorar e transformar dados econômicos públi
 | Nome Completo | Papel | GitHub | LinkedIn |
 | --- | --- | --- | --- |
 | Karam Diniz Coutinho |  Product Owner | https://github.com/karam-diniz | www.linkedin.com/in/karam-diniz |
-| Davi Ribeiro André  | Scrum Master | [](https://www.google.com/search?q=link-github) | [](https://www.google.com/search?q=link-linkedin) |
+| Davi Ribeiro André  | Scrum Master | https://github.com/DaviRibeiroAndre | https://www.linkedin.com/in/davi-ribeiro-andr%C3%A9-a3729b1b3/ |
 | Gabriel Herzer Gaspary | Scrum Team | https://github.com/GabrielHerzer | https://www.linkedin.com/in/gabriel-herzer-133220352/ |
 | Gabriel Tase Telmo |  Scrum Team | https://github.com/gabrieltase | https://www.linkedin.com/in/gabriel-tase-telmo-1630a4431/ |
 | Igor Makoto Hoshino |  Scrum Team  | https://github.com/igormakoto | https://www.linkedin.com/in/igor-makoto-57198b270/ ||
