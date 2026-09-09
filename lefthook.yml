@@ -1,23 +1,13 @@
-# lefthook.yml
+# lefthoo# lefthook.yml
 
+# 1. Valida a mensagem do commit ao salvar
 commit-msg:
   commands:
     commitlint:
-      # Chama o binário do Windows diretamente
       run: npx.cmd --no -- commitlint --edit {1}
 
+# 2. Valida o nome da branch antes de enviar para o GitHub
 pre-push:
   commands:
     check-branch:
-      # Força a execução usando o bash nativo do Git for Windows
-      runner: bash
-      run: |
-        BRANCH_NAME=$(git symbolic-ref --short HEAD)
-        REGEX="^(main|develop|(feat|feature|fix|hotfix|docs|refactor|chore|test|release)\/[a-z0-9._-]+)$"
-        if ! echo "$BRANCH_NAME" | grep -Eq "$REGEX"; then
-          echo ""
-          echo "❌ [ERRO] Nome de branch fora do padrão: $BRANCH_NAME"
-          echo "👉 Exemplos permitidos: feat/nome, fix/nome, docs/nome, release/1.0.0"
-          echo ""
-          exit 1
-        fi
+      run: node scripts/check-branch.js
