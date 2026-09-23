@@ -1,0 +1,13 @@
+header {
+    background-image: linear-gradient(to right , #444444 , #333333);
+    border-bottom: 3px solid #8fb9fc;
+}
+
+#bg {
+    background-image: linear-gradient(to right, #333333 , #444444 , #333333);
+}
+
+.card {
+    border-radius: 10px !important;
+    border: 1px solid #e5e7eb !important;
+}
