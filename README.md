@@ -28,9 +28,9 @@ Neste projeto, nosso objetivo é explorar e transformar dados econômicos públi
 
 | Período da Sprint | Documentação da Sprint | Vídeo do Incremento (YouTube) |
 | --- | --- | --- |
-| 07/09/2026 - 27/09/2026 | [Documentação Sprint 1](https://www.google.com/search?q=link-para-doc) | [Assistir no YouTube](https://www.google.com/search?q=link-para-video) |
-| 05/10/2026 - 25/10/2026 | [Documentação Sprint 2](https://www.google.com/search?q=link-para-doc) | [Assistir no YouTube](https://www.google.com/search?q=link-para-video) |
-| 02/11/2026 - 22/11/2026 | [Documentação Sprint 3](https://www.google.com/search?q=link-para-doc) | [Assistir no YouTube](https://www.google.com/search?q=link-para-video) |
+| 07/09/2026 - 27/09/2026 | [![Sprint 1](https://img.shields.io/badge/Sprint%201-Documenta%C3%A7%C3%A3o-36a2eb?style=flat&logo=markdown&logoColor=white)](./docs/scrum/backlog/sprint-1.md) | [![YouTube](https://img.shields.io/badge/YouTube-Assista%20ao%20v%C3%ADdeo-FF0000?style=flat&logo=youtube&logoColor=white)](https://youtu.be/ADqZf03HH-4) |
+| 05/10/2026 - 25/10/2026 | [![Sprint 2](https://img.shields.io/badge/Sprint%202-Documenta%C3%A7%C3%A3o-36a2eb?style=flat&logo=markdown&logoColor=white)](./docs/scrum/backlog/sprint-2.md) | [Assistir no YouTube](https://www.google.com/search?q=link-para-video) |
+| 02/11/2026 - 22/11/2026 | [![Sprint 3](https://img.shields.io/badge/Sprint%203-Documenta%C3%A7%C3%A3o-36a2eb?style=flat&logo=markdown&logoColor=white)](./docs/scrum/backlog/sprint-3.md) | [Assistir no YouTube](https://www.google.com/search?q=link-para-video) |
 
 ---
 
