@@ -1,0 +1,13 @@
+# lefthoo# lefthook.yml
+
+# 1. Valida a mensagem do commit ao salvar
+commit-msg:
+  commands:
+    commitlint:
+      run: npx.cmd --no -- commitlint --edit {1}
+
+# 2. Valida o nome da branch antes de enviar para o GitHub
+pre-push:
+  commands:
+    check-branch:
+      run: node scripts/check-branch.js
