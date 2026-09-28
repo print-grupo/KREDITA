@@ -10,7 +10,7 @@ Neste projeto, nosso objetivo é explorar e transformar dados econômicos públi
 
 | ID | Sprint | Prioridade | User Story | Critérios de Aceite (Definition Of Done) | Est. |
 | :--- | :---: | :---: | :--- | :--- | :---: |
-| **US01** | 1 | Alta | **Como analista de crédito**, gostaria de coletar dados do BCB (inadimplência, ticket, etc.) e integrar bases de dados públicos, para que a análise reflita o real comprometimento financeiro da região. | - Acesso direto via Colab.<br>- Quebra de faixas de atraso (curta e longa).<br>- Integração de fontes sobre apostas (Bets). | 5 |
+| **US01** | 1 | Alta | **Como analista de crédito**, gostaria de coletar dados do BCB (inadimplência, ticket, etc.) e integrar bases de dados públicos, para que a análise reflita o real comprometimento financeiro da região. | - Acesso direto via Colab.<br>- Quebra de faixas de atraso (curta e longa).<br>- Integração de fontes sobre apostas (Bets). | 8 |
 | **US02** | 1 | Alta | **Como analista de dados**, gostaria que os indicadores estivessem padronizados e limpos, diferenciando dívida saudável de crítica, para garantir a confiabilidade dos cálculos do Score. | - Limpar dados nulos e valores absurdos (infinitos).<br>- Converter valores monetários de vírgula para ponto.<br>- Classificar dívida imobiliária (saudável) vs. consumo/Bets (crítica). | 8 |
 | **US03** | 1 | Alta | **Como usuário final**, desejo visualizar os dados reais processados por meio de gráficos, para facilitar a análise e a compreensão rápida das informações. | - Pelo menos um gráfico gerado plotando dados reais dentro do notebook do Colab. | 3 |
 | **US04** | 1 | Alta | **Como usuário**, desejo acessar a estrutura inicial do site web, mesmo sem os dados reais conectados, para visualizar a futura organização do sistema. | - Esqueleto (Site inicial) criado em HTML5/CSS3.<br>- Código salvo e versionado no GitHub. | 3 |
@@ -28,50 +28,85 @@ Neste projeto, nosso objetivo é explorar e transformar dados econômicos públi
 
 | Período da Sprint | Documentação da Sprint | Vídeo do Incremento (YouTube) |
 | --- | --- | --- |
-| 07/09/2026 - 27/09/2026 | [Documentação Sprint 1](https://www.google.com/search?q=link-para-doc) | [Assistir no YouTube](https://www.google.com/search?q=link-para-video) |
-| 05/10/2026 - 25/10/2026 | [Documentação Sprint 2](https://www.google.com/search?q=link-para-doc) | [Assistir no YouTube](https://www.google.com/search?q=link-para-video) |
-| 02/11/2026 - 22/11/2026 | [Documentação Sprint 3](https://www.google.com/search?q=link-para-doc) | [Assistir no YouTube](https://www.google.com/search?q=link-para-video) |
+| 07/09/2026 - 27/09/2026 | [![Sprint 1](https://img.shields.io/badge/Sprint%201-Documenta%C3%A7%C3%A3o-36a2eb?style=flat&logo=markdown&logoColor=white)](./docs/scrum/backlog/sprint-1.md) | [![YouTube](https://img.shields.io/badge/YouTube-Assista%20ao%20v%C3%ADdeo-FF0000?style=flat&logo=youtube&logoColor=white)](https://youtu.be/ADqZf03HH-4) |
+| 05/10/2026 - 25/10/2026 | [![Sprint 2](https://img.shields.io/badge/Sprint%202-Documenta%C3%A7%C3%A3o-36a2eb?style=flat&logo=markdown&logoColor=white)](./docs/scrum/backlog/sprint-2.md) | [Assistir no YouTube](https://www.google.com/search?q=link-para-video) |
+| 02/11/2026 - 22/11/2026 | [![Sprint 3](https://img.shields.io/badge/Sprint%203-Documenta%C3%A7%C3%A3o-36a2eb?style=flat&logo=markdown&logoColor=white)](./docs/scrum/backlog/sprint-3.md) | [Assistir no YouTube](https://www.google.com/search?q=link-para-video) |
 
 ---
 
-## Tecnologias Utilizadas
+## 🧰 ferramentas utilizadas 
 
-* **Linguagens:** [Ex: Python, JavaScript, TypeScript]
-* **Frameworks:** [Ex: React, Node.js, FastAPI]
-* **Banco de Dados:** [Ex: PostgreSQL, MongoDB]
-* **Ferramentas e DevOps:** [Ex: Git, Docker, Figma, GitHub Actions]
+### Interface Web
 
----
+![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=flat&logo=html5&logoColor=white)
+![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat&logo=css3&logoColor=white)
 
-## Critérios de Prontidão (DoR) e Conclusão (DoD)
+### Desenvolvimento
 
-### Definição de Pronto (Definition of Ready - DoR) Geral
+![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white)
 
-* A história de usuário está escrita e compreendida pela equipe.
-* Os critérios de aceite estão definidos.
-* As dependências técnicas foram mapeadas e resolvidas.
-* A pontuação (estimativa) foi realizada pelo time.
+### Tratamento e Análise de Dados
 
-### Definição de Concluído (Definition of Done - DoD) Geral
+![Google Colab](https://img.shields.io/badge/Google%20Colab-F9AB00?style=flat&logo=googlecolab&logoColor=white)
+![Pandas](https://img.shields.io/badge/Pandas-150458?style=flat&logo=pandas&logoColor=white)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/14L3S4EmFeAGcKZXWWj69y9KhEUn5McOE?usp=sharing)
 
-* Código revisado por pelo menos um membro da equipe (Pull Request aprovado).
-* Testes unitários/integração implementados e passando com sucesso.
-* Sem erros críticos de linting ou build.
-* Documentação atualizada.
+### Organização do Projeto
 
-### DoR e DoD por Sprint
+![Lefthook](https://img.shields.io/badge/Lefthook-000000?style=flat)
+![Jira](https://img.shields.io/badge/Jira-0052CC?style=flat&logo=jira&logoColor=white)
 
- **Sprint 1:**
-* *DoR:* Histórias iniciais validadas pelo PO.
-* *DoD:* MVP funcional rodando em ambiente de desenvolvimento.
+## ✅ Critérios de Prontidão (DoR) e Conclusão (DoD)
 
- **Sprint 2:**
-* *DoR:* Contratos de API e protótipos de tela aprovados.
-* *DoD:* Testes de integração automatizados e funcionalidades integradas.
+### 📋 Definição de Pronto — DoR
 
- **Sprint 3:**
-* *DoR:* Casos de teste de aceitação definidos.
-* *DoD:* Sistema estabilizado, revisado e pronto para homologação.
+Uma tarefa ou User Story estará pronta para desenvolvimento quando:
+
+- A descrição estiver definida e compreendida pela equipe.
+- Os critérios de aceite estiverem estabelecidos.
+- As informações e dependências necessárias estiverem identificadas.
+- A estimativa da tarefa estiver definida pela equipe.
+
+### 🏁 Definição de Feito — DoD
+
+Uma tarefa ou User Story será considerada concluída quando:
+
+- O desenvolvimento previsto tiver sido realizado.
+- Os critérios de aceite tiverem sido atendidos.
+- O resultado tiver sido revisado por outro integrante da equipe.
+- As alterações estiverem versionadas no GitHub.
+- A documentação relacionada tiver sido atualizada quando necessário.
+
+### 📌 DoR e DoD por Sprint
+
+#### Sprint 1 — Coleta, Tratamento, Visualização e Site Inicial
+
+**DoR:**
+- User Stories da Sprint validadas pela equipe.
+- Indicadores e fontes de dados definidos.
+- Estrutura do Google Colab disponível para desenvolvimento.
+- Ambiente de desenvolvimento preparado.
+
+**DoD:**
+- Dados iniciais dos indicadores coletados e disponibilizados no Colab.
+- Dados tratados e preparados para análise.
+- Gráficos dos eixos definidos desenvolvidos.
+- Estrutura inicial do site implementada e revisada.
+- Alterações versionadas no GitHub.
+
+#### Sprint 2 — Score e Integração
+
+**DoR:**
+
+**DoD:**
+
+
+#### Sprint 3 — Comparação, Exportação e Documentação
+
+**DoR:**
+
+**DoD:**
+
 
 ---
 
@@ -86,7 +121,7 @@ Neste projeto, nosso objetivo é explorar e transformar dados econômicos públi
 
 ## Manual de Usuário
 
-[Descreva aqui o passo a passo de como o usuário final deve navegar, fazer login, interagir com a interface e utilizar as principais funcionalidades do sistema para atingir seus objetivos.]
+[ preencher ]
 
 ---
 
