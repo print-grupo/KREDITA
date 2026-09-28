@@ -1,13 +1,208 @@
-header {
-    background-image: linear-gradient(to right , #444444 , #333333);
-    border-bottom: 3px solid #8fb9fc;
+:root {
+    --k-bg: #090b10;
+    --k-surface: #10131b;
+    --k-surface-2: #161a24;
+    --k-border: rgba(255, 255, 255, 0.08);
+    --k-text: #e8eaf0;
+    --k-muted: #8d95a8;
+    --k-accent: #6ea8ff;
+    --k-accent-soft: rgba(110, 168, 255, 0.14);
+    --bs-body-bg: var(--k-bg);
+    --bs-body-color: var(--k-text);
+    --bs-body-font-family: 'Manrope', system-ui, sans-serif;
+    --bs-secondary-color: var(--k-muted);
 }
 
-#bg {
-    background-image: linear-gradient(to right, #333333 , #444444 , #333333);
+body {
+    background-color: var(--k-bg);
+    background-image:
+        radial-gradient(60rem 30rem at 85% -10%, rgba(110, 168, 255, 0.16), transparent 60%),
+        radial-gradient(40rem 25rem at -10% 10%, rgba(110, 168, 255, 0.07), transparent 60%);
+    background-repeat: no-repeat;
+    background-attachment: fixed;
 }
 
-.card {
-    border-radius: 10px !important;
-    border: 1px solid #e5e7eb !important;
+h2 {
+    font-size: clamp(1.5rem, 2.5vw + 1rem, 2.25rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+h3 {
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+/* Navbar translúcida */
+.site-nav {
+    background: rgba(9, 11, 16, 0.55);
+    -webkit-backdrop-filter: blur(16px) saturate(150%);
+    backdrop-filter: blur(16px) saturate(150%);
+    border-bottom: 1px solid var(--k-border);
+}
+
+.logo {
+    width: auto;
+    object-fit: contain;
+}
+
+.brand {
+    font-family: 'Black Ops One', cursive;
+    font-size: 1.5rem;
+    color: #fff;
+}
+
+.site-nav .nav-link {
+    color: var(--k-muted);
+    padding: 0.5rem 0.9rem;
+    border-radius: 999px;
+    transition: color .15s, background-color .15s;
+}
+
+.site-nav .nav-link:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.site-nav .nav-link.active {
+    color: #fff;
+    background: var(--k-accent-soft);
+}
+
+.site-nav .navbar-toggler {
+    border-color: var(--k-border);
+}
+
+@media (max-width: 767.98px) {
+    #menu {
+        padding: 0.5rem 0 1rem;
+    }
+}
+
+/* Blocos */
+.hero {
+    padding: clamp(1.25rem, 3vw, 2rem);
+    background: linear-gradient(135deg, var(--k-surface-2), var(--k-surface));
+    border: 1px solid var(--k-border);
+    border-radius: 18px;
+}
+
+.painel,
+.lateral {
+    background: var(--k-surface);
+    border: 1px solid var(--k-border);
+    border-radius: 14px;
+    padding: 1.1rem;
+}
+
+.painel {
+    height: 100%;
+    min-height: 180px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.painel-vazio {
+    flex: 1;
+    display: grid;
+    place-items: center;
+    color: var(--k-muted);
+    border: 1px dashed rgba(255, 255, 255, 0.14);
+    border-radius: 10px;
+}
+
+.lateral h2 {
+    font-size: 1rem;
+    padding-bottom: 0.75rem;
+    margin-bottom: 0.75rem;
+    border-bottom: 1px solid var(--k-border);
+}
+
+.lateral li {
+    color: var(--k-muted);
+}
+
+@media (min-width: 768px) {
+    .lateral {
+        position: sticky;
+        top: 5.5rem;
+    }
+}
+
+/* Rodapé */
+.site-footer {
+    border-top: 1px solid var(--k-border);
+    color: var(--k-muted);
+    font-size: 0.9rem;
+}
+
+/* Foco visível */
+a:focus-visible,
+button:focus-visible {
+    outline: 2px solid var(--k-accent);
+    outline-offset: 2px;
+}
+
+/* Quem Somos */
+.membro {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1.25rem;
+    background: var(--k-surface);
+    border: 1px solid var(--k-border);
+    border-radius: 14px;
+}
+
+.membro h3 {
+    font-size: 1.05rem;
+    margin: 0.5rem 0 0;
+}
+
+.membro-num {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--k-surface-2);
+    border: 1px solid var(--k-border);
+    color: var(--k-muted);
+    font-weight: 700;
+}
+
+.membro-funcao {
+    margin: auto 0 0;
+    padding-top: 0.5rem;
+    color: var(--k-muted);
+    font-size: 0.95rem;
+}
+
+.sigla {
+    display: inline-block;
+    margin-right: 0.35rem;
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    background: var(--k-surface-2);
+    color: var(--k-text);
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.membro-destaque {
+    border-color: rgba(110, 168, 255, 0.45);
+    background: linear-gradient(160deg, var(--k-accent-soft), var(--k-surface) 60%);
+}
+
+.membro-destaque .membro-num {
+    background: var(--k-accent);
+    border-color: var(--k-accent);
+    color: var(--k-bg);
+}
+
+.membro-destaque .sigla {
+    background: var(--k-accent-soft);
+    color: var(--k-accent);
 }
