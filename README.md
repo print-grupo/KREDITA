@@ -47,7 +47,7 @@ Neste projeto, nosso objetivo é explorar e transformar dados econômicos públi
 
 ### Tratamento e Análise de Dados
 
-![Google Colab](https://img.shields.io/badge/Google%20Colab-F9AB00?style=flat&logo=googlecolab&logoColor=white)
+![Google Colab](https://colab.research.google.com/drive/19AN2v6tWgn0Iaef7htH-RjWT5y1R_RmX?usp=sharing)
 ![Pandas](https://img.shields.io/badge/Pandas-150458?style=flat&logo=pandas&logoColor=white)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/14L3S4EmFeAGcKZXWWj69y9KhEUn5McOE?usp=sharing)
 
