@@ -1,25 +1,26 @@
+# Backlog da Sprint 3
+
 | **ID** | **Prioridade** | **Descrição** | **Critérios de Aceite** | **Estimativa** |
-| --- | --- | --- | --- | --- |
-| **US09** | Alta | **Como analista de dados**, gostaria de filtrar, visualizar e acompanhar os indicadores por diferentes cenários, níveis geográficos e períodos, para realizar análises detalhadas e identificar tendências socioeconômicas. | - Revisão final do Google Colab e das fórmulas do Score concluída.<br>- Filtros por localização, cenário e período implementados conforme a disponibilidade dos dados.<br>- Limitações e ausência de dados sinalizadas nas visualizações. | |
-| **US10** | Alta | **Como estrategista**, gostaria de comparar municípios e regiões por meio de seus indicadores e exportar os resultados, para identificar diferenças entre as localidades e apoiar decisões estratégicas. | - Seleção de localidades para comparação disponível.<br>- Informações das localidades apresentadas lado a lado.<br>- Comparações realizadas com critérios e períodos compatíveis.<br>- Exportação dos dados da análise implementada. <br>- Pesquisas sobre apostas disponibilizadas como conteúdo contextual | |
-| **US11** | Media | **Como usuário**, gostaria de acessar uma plataforma online estável, intuitiva e responsiva, para utilizar as funcionalidades do projeto de maneira simples e eficiente. | - Frontend definitivo integrado ao backend e aos dados do projeto.<br>- Banco de dados implementado e integrado à aplicação.<br>- Interface aprimorada quanto ao design, à navegação e à responsividade.<br>- Aplicação publicada no provedor de nuvem definido pela equipe.<br>- Funcionalidades principais testadas no ambiente publicado. | |
-| **US12** | Media | **Como usuário**, gostaria de acessar a documentação, a metodologia e o manual do sistema, além de pesquisas complementares, para compreender seu funcionamento, a origem dos indicadores e a interpretação dos resultados. | - Documentos atualizados com as funcionalidades, entregas e orientações de acesso.<br>- Documentação metodológica atualizada e disponibilizada no github.<br>- Manual do usuário elaborado com orientações sobre as funcionalidades entregues.<br>- Documentação revisada quanto à clareza e à consistência com o sistema. | |
+| --- | --- | --- | --- | ---: |
+| **US09** | Alta | **Como analista de dados**, gostaria de filtrar, visualizar e acompanhar os indicadores por diferentes cenários, níveis geográficos e períodos, para realizar análises detalhadas e identificar tendências socioeconômicas. | - Revisão final do Google Colab e das fórmulas do Score concluída.<br>- Filtros por localização, cenário e período implementados conforme a disponibilidade dos dados.<br>- Limitações e ausência de dados sinalizadas nas visualizações. | **13** |
+| **US10** | Alta | **Como estrategista**, gostaria de comparar municípios e regiões por meio de seus indicadores e exportar os resultados, para identificar diferenças entre as localidades e apoiar decisões estratégicas. | - Seleção de localidades para comparação disponível.<br>- Informações das localidades apresentadas lado a lado.<br>- Comparações realizadas com critérios e períodos compatíveis.<br>- Exportação dos dados da análise implementada.<br>- Pesquisas sobre apostas disponibilizadas como conteúdo contextual. | **8** |
+| **US11** | Média | **Como usuário**, gostaria de acessar uma plataforma online estável, intuitiva e responsiva, para utilizar as funcionalidades do projeto de maneira simples e eficiente. | - Frontend definitivo integrado ao backend e aos dados do projeto.<br>- Banco de dados implementado e integrado à aplicação.<br>- Interface aprimorada quanto ao design, à navegação e à responsividade.<br>- Aplicação publicada no provedor de nuvem definido pela equipe.<br>- Funcionalidades principais testadas no ambiente publicado. | **8** |
+| **US12** | Média | **Como usuário**, gostaria de acessar a documentação, a metodologia e o manual do sistema, para compreender seu funcionamento, a origem dos indicadores e a interpretação dos resultados. | - Documentos atualizados com as funcionalidades, entregas e orientações de acesso.<br>- Documentação metodológica atualizada e disponibilizada no GitHub.<br>- Manual do usuário elaborado com orientações sobre as funcionalidades entregues.<br>- Documentação revisada quanto à clareza e à consistência com o sistema. | **5** |
 
----
+## 🔗 Tasks
 
-## Tasks
-
-| **ID** | **Prioridade** | **Descrição** | **Definição de Pronto (DoR)** | **Definição de Feito (DoD)** | **Estimativa** |
-|--------|----------------|---------------|-------------------------------|-------------------------------|----------------|
-| **US09-T0-** | | | | | |
-| **US09-T0-** | | | | | |
-| **US09-T0-** | | | | | |
-| **US09-T0-** | | | | | |
-| **US10-T0-** | | | | | |
-| **US10-T0-** | | | | | |
-| **US10-T0-** | | | | | |
-| **US10-T0-** | | | | | |
-| **US11-T0-** | | | | | |
-| **US11-T0-** | | | | | |
-| **US11-T0-** | | | | | |
-| **US11-T0-** | | | | | |
+| ID | Prioridade | Descrição | Definição de Pronto (DoR) | Definição de Feito (DoD) | Estimativa |
+| --- | --- | --- | --- | --- | ---: |
+| **US09-T01** | Alta | Realizar a revisão final do Google Colab e das fórmulas utilizadas no processamento. | Notebook e dados disponíveis.<br>Alterações das fórmulas identificadas. | Notebook executado integralmente.<br>Fórmulas atualizadas.<br>Resultados conferidos e disponíveis para uso na aplicação. | **8** |
+| **US09-T02** | Alta | Implementar gráficos dos eixos e da evolução dos resultados no site. | Dados dos indicadores e períodos disponíveis.<br>Visualizações a implementar definidas. | Gráficos disponíveis no site.<br>Valores correspondentes aos dados utilizados.<br>Legendas e períodos de referência identificados. | **5** |
+| **US09-T03** | Alta | Implementar mapa interativo com navegação por estados e municípios. | Dados geográficos disponíveis.<br>Correspondência entre municípios e resultados definida. | Mapa permite selecionar estados e consultar municípios.<br>Resultados apresentados para a localidade selecionada.<br>Ausência de dados sinalizada. | **13** |
+| **US10-T01** | Alta | Implementar a comparação entre municípios na aplicação. | Indicadores de comparação definidos.<br>Dados municipais disponíveis. | Municípios selecionáveis para comparação.<br>Indicadores apresentados lado a lado.<br>Localidades e períodos identificados. | **3** |
+| **US10-T02** | Alta | Implementar a exportação dos dados das análises. | Formato do arquivo e campos de exportação definidos.<br>Dados da análise disponíveis. | Arquivo disponível para download.<br>Dados exportados correspondentes à análise selecionada.<br>Arquivo gerado conferido em ferramenta compatível. | **3** |
+| **US10-T03** | Alta | Disponibilizar as pesquisas sobre BETS como conteúdo contextual no site. | Pesquisas reunidas e revisadas.<br>Fontes identificadas.<br>Local de apresentação definido. | Pesquisas acessíveis no site.<br>Fontes apresentadas.<br>Conteúdo revisado e distinguido dos indicadores utilizados no cálculo. | **8** |
+| **US11-T01** | Média | Implementar o banco de dados e sua integração com a aplicação. | Dados a armazenar identificados.<br>Estrutura do banco e tecnologia definidas. | Banco implementado.<br>Dados previstos armazenados.<br>Conexão e consultas utilizadas pela aplicação testadas. | **13** |
+| **US11-T02** | Média | Publicar a aplicação no provedor de nuvem escolhido entre AWS e Oracle. | Provedor e ambiente definidos.<br>Acessos necessários disponíveis.<br>Aplicação preparada para publicação. | Aplicação acessível pelo endereço definido.<br>Serviços necessários funcionando.<br>Funcionalidades principais verificadas no ambiente publicado. | **8** |
+| **US11-T03** | Média | Aprimorar o design, a navegação e a responsividade do site. | Interface atual disponível.<br>Melhorias visuais e de usabilidade definidas. | Componentes visuais padronizados.<br>Navegação revisada.<br>Interface adaptada aos tamanhos de tela definidos para teste. | **8** |
+| **US12-T01** | Média | Finalizar a documentação do projeto no GitHub. | Informações das entregas consolidadas.<br>Links e orientações de acesso disponíveis. | GitHub atualizado com as funcionalidades e entregas.<br>Links conferidos.<br>Instruções de acesso revisadas. | **5** |
+| **US12-T02** | Média | Atualizar a documentação com as alterações das fórmulas e dos parâmetros de cálculo. | Alterações das fórmulas definidas.<br>Documentação anterior disponível. | Fórmulas e parâmetros atualizados na documentação.<br>Exemplos afetados revisados.<br>Markdown e PDF consistentes com as alterações. | **3** |
+| **US12-T03** | Média | Disponibilizar a metodologia do projeto no site. | Conteúdo metodológico revisado.<br>Forma de apresentação definida. | Metodologia acessível no site.<br>Conteúdo consistente com a documentação.<br>Links para materiais complementares funcionando. | **3** |
+| **US12-T04** | Média | Elaborar o manual do usuário da aplicação. | Funcionalidades disponíveis para consulta.<br>Fluxos de utilização identificados. | Manual com orientações de acesso e uso.<br>Funcionalidades entregues documentadas.<br>Instruções verificadas na aplicação.<br>Manual disponibilizado para consulta. | **8** |
