@@ -82,32 +82,60 @@ Uma tarefa ou User Story será considerada concluída quando:
 #### Sprint 1 — Coleta, Tratamento, Visualização e Site Inicial
 
 **DoR:**
+
 - User Stories da Sprint validadas pela equipe.
 - Indicadores e fontes de dados definidos.
 - Estrutura do Google Colab disponível para desenvolvimento.
 - Ambiente de desenvolvimento preparado.
 
 **DoD:**
+
 - Dados iniciais dos indicadores coletados e disponibilizados no Colab.
 - Dados tratados e preparados para análise.
 - Gráficos dos eixos definidos desenvolvidos.
 - Estrutura inicial do site implementada e revisada.
 - Alterações versionadas no GitHub.
 
-#### Sprint 2 — Score e Integração
+#### Sprint 2 — Metodologia do Score, Ranking e integração
 
 **DoR:**
 
+- User Stories e critérios de aceite da Sprint definidos.
+- Dados da Sprint anterior disponíveis para análise.
+- Indicadores e respectivos níveis geográficos identificados.
+- Processo de extração e tratamento disponível no Google Colab.
+- Estrutura inicial da aplicação disponível integração no front end
+
 **DoD:**
 
+- Indicadores, relações, pesos e método de cálculo do Score definidos e documentados.
+- Método de relacionamento entre dados estaduais e municipais estabelecido.
+- Cálculo do Score e construção do ranking implementados no Google Colab.
+- Processo de extração e tratamento revisado, com melhorias de desempenho verificadas.
+- Frontend e backend desenvolvidos e integrados conforme o escopo da Sprint.
+- Decisões e resultados registrados na documentação do GitHub.
 
-#### Sprint 3 — Comparação, Exportação e Documentação
+#### Sprint 3 — Mapa para analise, Publicação da Aplicação e Documentação Final
 
 **DoR:**
 
+- User Stories, tarefas, prioridades e critérios de aceite da Sprint definidos.
+- Versões de referência do Google Colab e da aplicação disponíveis.
+- Dados, períodos e níveis geográficos disponíveis reconhecidos.
+- Estrutura do banco de dados e requisitos de integração definidos.
+- Pesquisas sobre apostas reunidas para revisão e apresentação no site.
+- Requisitos de hospedagem e documentos a atualizar identificados.
+
 **DoD:**
 
-
+- Revisão final do Google Colab e das fórmulas concluída, com resultados conferidos.
+- Filtros, gráficos e mapa interativo implementados, com identificação de períodos e ausência de dados.
+- Comparação entre localidades e exportação dos resultados disponíveis.
+- Pesquisas sobre apostas apresentadas como conteúdo contextual, com identificação das fontes.
+- Banco de dados implementado e integrado à aplicação.
+- Frontend definitivo integrado ao backend e aos dados do projeto.
+- Aplicação publicada no provedor de nuvem escolhido.
+- Documentação do GitHub, metodologia e manual do usuário atualizados e disponíveis para consulta.
 ---
 
 ## Estratégia de Branch
