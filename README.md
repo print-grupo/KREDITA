@@ -32,6 +32,12 @@ Neste projeto, nosso objetivo é explorar e transformar dados econômicos públi
 | 05/10/2026 - 25/10/2026 | [![Sprint 2](https://img.shields.io/badge/Sprint%202-Documenta%C3%A7%C3%A3o-36a2eb?style=flat&logo=markdown&logoColor=white)](./docs/scrum/backlog/sprint-2.md) | [![YouTube](https://img.shields.io/badge/YouTube-Assista%20ao%20vídeo-red?style=flat&logo=youtube&logoColor=white)](https://www.youtube.com/watch?v=owJyNrZKpBI) |
 | 02/11/2026 - 22/11/2026 | [![Sprint 3](https://img.shields.io/badge/Sprint%203-Documenta%C3%A7%C3%A3o-36a2eb?style=flat&logo=markdown&logoColor=white)](./docs/scrum/backlog/sprint-3.md) | [Assistir no YouTube](https://www.google.com/search?q=link-para-video) |
 
+## Google Colab da equipe
+
+Acesse o notebook atualizado do projeto para consultar e executar os cálculos do Score.
+
+[![Abrir o Colab da equipe](https://img.shields.io/badge/Google_Colab-Abrir_notebook-F9AB00?style=for-the-badge&logo=googlecolab&logoColor=white)](https://colab.research.google.com/drive/1R2xVnBUP_Qv7AYr3wVst7iTW0_nd5bKv#scrollTo=3163fc66)
+
 ---
 
 ## 🧰 ferramentas utilizadas 
@@ -49,12 +55,14 @@ Neste projeto, nosso objetivo é explorar e transformar dados econômicos públi
 
 ![Google Colab](https://img.shields.io/badge/Google%20Colab-F9AB00?style=flat&logo=googlecolab&logoColor=white)
 ![Pandas](https://img.shields.io/badge/Pandas-150458?style=flat&logo=pandas&logoColor=white)
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1o7CGwUoGUn3ozhkwH5QGE7_Af_MAfyta?usp=sharing)
+![SQL](https://img.shields.io/badge/SQL-4479A1?style=flat&logo=mysql&logoColor=white)
+
 
 ### Organização do Projeto
 
 ![Lefthook](https://img.shields.io/badge/Lefthook-000000?style=flat)
 ![Jira](https://img.shields.io/badge/Jira-0052CC?style=flat&logo=jira&logoColor=white)
+![Figma](https://img.shields.io/badge/Figma-F24E1E?style=flat&logo=figma&logoColor=white)
 
 ## ✅ Critérios de Prontidão (DoR) e Conclusão (DoD)
 
