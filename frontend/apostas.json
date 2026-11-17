@@ -1,0 +1,179 @@
+{
+  "id": "datasenado-2024-t15",
+  "estudo": "DataSenado · Panorama Político 2024",
+  "inicio": "2024-06-05",
+  "fim": "2024-06-28",
+  "metrica": "Pessoas de 16 anos ou mais que declararam ter gasto com apostas esportivas online nos 30 dias anteriores à entrevista",
+  "unidade": "%",
+  "fonte": "https://www12.senado.leg.br/noticias/arquivos/2024/09/30/relatorio_apostasesportivas-golpesdigitais-endividamento-1.pdf#page=84",
+  "territorios": [
+    {
+      "uf": "BR",
+      "valor": 12,
+      "margem_pp": 1,
+      "populacao_estimada": 20344586
+    },
+    {
+      "uf": "RR",
+      "valor": 17,
+      "margem_pp": 3.7,
+      "populacao_estimada": 71279
+    },
+    {
+      "uf": "PA",
+      "valor": 17,
+      "margem_pp": 3.8,
+      "populacao_estimada": 1102595
+    },
+    {
+      "uf": "MT",
+      "valor": 17,
+      "margem_pp": 5.6,
+      "populacao_estimada": 460317
+    },
+    {
+      "uf": "AL",
+      "valor": 15,
+      "margem_pp": 4.4,
+      "populacao_estimada": 382513
+    },
+    {
+      "uf": "RO",
+      "valor": 14,
+      "margem_pp": 5.9,
+      "populacao_estimada": 209413
+    },
+    {
+      "uf": "AC",
+      "valor": 14,
+      "margem_pp": 4.2,
+      "populacao_estimada": 94236
+    },
+    {
+      "uf": "AM",
+      "valor": 14,
+      "margem_pp": 3.8,
+      "populacao_estimada": 430308
+    },
+    {
+      "uf": "TO",
+      "valor": 14,
+      "margem_pp": 4.4,
+      "populacao_estimada": 173231
+    },
+    {
+      "uf": "MA",
+      "valor": 14,
+      "margem_pp": 4,
+      "populacao_estimada": 727024
+    },
+    {
+      "uf": "SE",
+      "valor": 14,
+      "margem_pp": 3.8,
+      "populacao_estimada": 255697
+    },
+    {
+      "uf": "BA",
+      "valor": 14,
+      "margem_pp": 3.7,
+      "populacao_estimada": 1598276
+    },
+    {
+      "uf": "AP",
+      "valor": 13,
+      "margem_pp": 3.5,
+      "populacao_estimada": 88915
+    },
+    {
+      "uf": "PI",
+      "valor": 13,
+      "margem_pp": 3.5,
+      "populacao_estimada": 331569
+    },
+    {
+      "uf": "RN",
+      "valor": 13,
+      "margem_pp": 4.2,
+      "populacao_estimada": 373582
+    },
+    {
+      "uf": "MS",
+      "valor": 13,
+      "margem_pp": 3.3,
+      "populacao_estimada": 278120
+    },
+    {
+      "uf": "DF",
+      "valor": 13,
+      "margem_pp": 4.2,
+      "populacao_estimada": 321084
+    },
+    {
+      "uf": "ES",
+      "valor": 12,
+      "margem_pp": 2.9,
+      "populacao_estimada": 380096
+    },
+    {
+      "uf": "RJ",
+      "valor": 12,
+      "margem_pp": 3.7,
+      "populacao_estimada": 1747521
+    },
+    {
+      "uf": "PR",
+      "valor": 12,
+      "margem_pp": 3.5,
+      "populacao_estimada": 1132212
+    },
+    {
+      "uf": "SC",
+      "valor": 12,
+      "margem_pp": 3.2,
+      "populacao_estimada": 707461
+    },
+    {
+      "uf": "RS",
+      "valor": 12,
+      "margem_pp": 3.4,
+      "populacao_estimada": 1115460
+    },
+    {
+      "uf": "GO",
+      "valor": 12,
+      "margem_pp": 3.3,
+      "populacao_estimada": 692283
+    },
+    {
+      "uf": "PE",
+      "valor": 11,
+      "margem_pp": 3.2,
+      "populacao_estimada": 860994
+    },
+    {
+      "uf": "SP",
+      "valor": 11,
+      "margem_pp": 3.5,
+      "populacao_estimada": 4072972
+    },
+    {
+      "uf": "PB",
+      "valor": 10,
+      "margem_pp": 2.9,
+      "populacao_estimada": 325794
+    },
+    {
+      "uf": "MG",
+      "valor": 10,
+      "margem_pp": 2.7,
+      "populacao_estimada": 1799096
+    },
+    {
+      "uf": "CE",
+      "valor": 8,
+      "margem_pp": 2.2,
+      "populacao_estimada": 612538
+    }
+  ]
+}
