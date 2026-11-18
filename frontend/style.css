@@ -196,7 +196,9 @@ button.suggestion-name:hover { background: var(--green-pale); }
 .dashboard-charts > :only-child { grid-column: 1 / -1; }
 .chart-context { margin-bottom: 12px; }
 .dashboard-preview .ranking-table-wrap { margin: 0 10px; }
-.dashboard-preview td:last-child { width: 1%; }
+@media (min-width: 761px) {
+  .dashboard-preview td:last-child { width: 1%; }
+}
 .preview-actions { display: flex; flex-wrap: wrap; gap: 9px; padding: 14px 20px 18px; }
 .primary-metric { background: var(--navy); color: #fff; border-color: var(--navy); }
 .primary-metric .metric-top { color: #c3d6dc; }
@@ -252,8 +254,31 @@ button.suggestion-name:hover { background: var(--green-pale); }
 .comparison-benchmark { display: grid; gap: 3px; margin: 12px 0; padding: 10px 12px; background: var(--bg); border-radius: 8px; }
 .comparison-benchmark span, .comparison-benchmark small { color: var(--muted); }
 .ranking-table-wrap { overflow-x: auto; }
-.ranking-table { width: 100%; border-collapse: collapse; white-space: nowrap; text-align: left; }
+.ranking-table { width: 100%; border-collapse: collapse; text-align: left; white-space: nowrap; }
 .ranking-table th, .ranking-table td { padding: 11px 10px; border-bottom: 1px solid var(--line); }
+.ranking-table td.rotulo-movel::before { display: none; }
+.acao-legenda { display: none; }
+
+@media (max-width: 760px) {
+  .ranking-table { white-space: normal; overflow-wrap: anywhere; }
+  .ranking-table .actions { flex-wrap: wrap; }
+  .ranking-table-municipios, .ranking-table-municipios tbody { display: block; }
+  .ranking-table-municipios thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .ranking-table-municipios tbody tr { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; margin-block: 8px; background: var(--surface); }
+  .ranking-table-municipios tbody th, .ranking-table-municipios tbody td { padding: 0; border: 0; }
+  .ranking-table-municipios tbody th { grid-row: 1; }
+  .ranking-table-municipios tbody th, .ranking-table-municipios .acoes-municipio, .ranking-table-municipios td[colspan] { grid-column: 1 / -1; }
+  .ranking-table-municipios td.rotulo-movel::before { display: block; content: attr(data-rotulo); color: var(--muted); font-size: 12px; }
+  .ranking-table-municipios .acoes-municipio .actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 4px; }
+  .ranking-table-municipios .row-action { display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; min-width: 0; height: 48px; gap: 1px; padding: 2px; }
+  .ranking-table-municipios .acao-legenda { display: block; font-size: 11px; line-height: 1.2; }
+  .method-indicators, .method-indicators tbody { display: block; }
+  .method-indicators thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .method-indicators tbody tr { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-block: 10px; border-bottom: 1px solid var(--line); }
+  .method-indicators tbody th { grid-column: 1 / -1; }
+  .method-indicators tbody th, .method-indicators tbody td { padding: 0; border: 0; }
+  .method-indicators td.rotulo-movel::before { display: block; content: attr(data-rotulo); color: var(--muted); font-size: 12px; }
+}
 .ranking-table thead { font-size: 12px; color: var(--muted); }
 .detail-actions { flex-wrap: wrap; justify-content: space-between; margin-bottom: 16px; }
 .chart-panel, .compare-heading, .copy-panel { padding: 18px; }
