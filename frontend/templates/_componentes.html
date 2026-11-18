@@ -1,0 +1,86 @@
+{% macro acoes(item, favoritos) %}<div class="actions"><a class="row-action"
+        href="/site/municipio.html?id={{ item.id }}" aria-label="Detalhes de {{ item.nome }}">↗</a><button
+        class="row-action" type="button" data-add="{{ item.id }}"
+        aria-label="Comparar {{ item.nome }}">+</button><button class="row-action" type="button"
+        data-favorite="{{ item.id }}" aria-label="Favorito {{ item.nome }}"
+        aria-pressed="{{ 'true' if item.id in favoritos else 'false' }}">{{ '★' if item.id in favoritos else '☆'
+        }}</button></div>{% endmacro %}
+{% macro tabela(itens, favoritos, score_label, numero) %}<div class="ranking-table-wrap" tabindex="0">
+    <table class="ranking-table">
+        <thead>
+            <tr>
+                <th>Posição</th>
+                <th>Município</th>
+                <th>População</th>
+                <th>{{ score_label }}</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>{% for item in itens %}<tr>
+                <td>{{ item.position or '—' }}</td>
+                <th scope="row">{{ item.nome }} · {{ item.uf }}</th>
+                <td>{{ numero(item.populacao,0) }}</td>
+                <td>{{ numero(item.score) }}</td>
+                <td>{{ acoes(item, favoritos) }}</td>
+            </tr>{% else %}<tr>
+                <td colspan="5">Nenhum município encontrado neste recorte.</td>
+            </tr>{% endfor %}</tbody>
+    </table>
+</div>{% endmacro %}
+{% macro seletores(filtros, ufs, eixos, ativos) %}<div class="rank-filters">
+    <label class="input-label">Buscar município<input type="search" name="busca" value="{{ filtros.busca }}"></label>
+    <label class="input-label">Estado (UF)<select name="uf">
+            <option value="">Todos os estados</option>{% for uf in ufs %}<option {% if filtros.uf==uf %}selected{% endif
+                %}>{{ uf }}</option>{% endfor %}
+        </select></label>
+    <label class="input-label">População<select name="porte">
+            <option value="">Todos os portes</option>{% for chave, rotulo in [('small','Até 20 mil'),('medium','Mais de
+            20 mil até 100 mil'),('large','Acima de 100 mil')] %}<option value="{{ chave }}" {% if filtros.porte==chave
+                %}selected{% endif %}>{{ rotulo }}</option>{% endfor %}
+        </select></label>
+    {{ seletor_eixos(eixos, ativos) }}
+</div>{% endmacro %}
+{% macro seletor_eixos(eixos, ativos) %}<fieldset>
+    <legend>Eixos do score</legend>{% for eixo in eixos %}<label><input type="checkbox" name="eixos"
+            value="{{ loop.index }}" {% if loop.index0 in ativos %}checked{% endif %}>{{ eixo }}</label> {% endfor %}
+</fieldset>{% endmacro %}
+{% macro perfil(item, eixos, ativos, numero) %}{% if item %}<div class="axis-bars">{% for i in ativos %}<div><span>{{
+            eixos[i] }}</span>{% if item.eixos[i] is not none %}<meter min="0" max="100" value="{{ item.eixos[i] }}"
+            aria-label="{{ eixos[i] }}"></meter>{% endif %}<strong>{{ numero(item.eixos[i]) }}</strong></div>{% endfor
+    %}</div>{% endif %}{% endmacro %}
+{% macro curva(dados, numero) %}{% if dados %}<div class="score-timeline" data-timeline><svg viewBox="0 0 600 175"
+        role="img" aria-label="Histórico do score">
+        {% for y, legenda in [(20,dados.alto),(87,(dados.alto+dados.baixo)/2),(154,dados.baixo)] %}<text x="4"
+            y="{{ y }}">{{ numero(legenda,0) }}</text>
+        <line x1="40" x2="578" y1="{{ y }}" y2="{{ y }}" stroke="currentColor" opacity=".2" />{% endfor %}
+        {% for linha in dados.linhas %}{% set cor = ['#16806c','#5284dc','#d48b21'][loop.index0] %}
+        <path d="{{ linha.caminho }}" fill="none" stroke="{{ cor }}" stroke-width="3" />{% for data, valor, x, y in
+        linha.vertices %}<circle tabindex="0" role="button"
+            aria-label="{{ linha.nome }} {{ data }} · {{ numero(valor) }}"
+            data-ponto="{{ linha.nome }} · {{ data }} · {{ numero(valor) }}" data-data="{{ data }}" cx="{{ x }}"
+            cy="{{ y }}" r="5" fill="{{ cor }}">
+            <title>{{ linha.nome }} · {{ data }} · {{ numero(valor) }}</title>
+        </circle>{% endfor %}{% endfor %}
+    </svg>
+    <div class="actions"><span>{{ dados.datas[0] }}</span><span>{{ dados.datas[-1] }}</span></div>
+    <p data-leitura aria-live="polite"></p>
+    <details>
+        <summary>Consultar valores</summary>
+        <div class="ranking-table-wrap">
+            <table class="ranking-table">
+                <thead>
+                    <tr>
+                        <th>Série</th>
+                        <th>Competência</th>
+                        <th>Score</th>
+                    </tr>
+                </thead>
+                <tbody>{% for linha in dados.linhas %}{% for data, valor, x, y in linha.vertices %}<tr>
+                        <td>{{ linha.nome }}</td>
+                        <td>{{ data }}</td>
+                        <td>{{ numero(valor) }}</td>
+                    </tr>{% endfor %}{% endfor %}</tbody>
+            </table>
+        </div>
+    </details>
+</div>{% else %}<p>Histórico indisponível.</p>{% endif %}{% endmacro %}

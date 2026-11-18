@@ -1,0 +1,295 @@
+const pagina = document.body.dataset.page;
+const retorno = document.querySelector('#retorno');
+const painel = () => document.querySelector('#conteudo');
+const chaves = { favoritos: 'kredita-favoritos', comparar: 'kredita-comparacao', eixos: 'kredita-eixos' };
+let pendente;
+let mapa;
+let calcularFaixas;
+let ufAnterior;
+let municipioAnterior;
+const secaoMapa = document.querySelector('#map-section');
+
+function ler(chave, fallback = []) {
+  try {
+    return JSON.parse(localStorage.getItem(chave)) ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function guardar(chave, valor) {
+  try {
+    localStorage.setItem(chave, JSON.stringify(valor));
+  } catch {
+    retorno.textContent = 'O navegador não conseguiu salvar a preferência.';
+  }
+}
+
+function lista(nome) {
+  const dados = ler(chaves[nome]);
+  return Array.isArray(dados) ? dados.map(String).filter(codigo => /^\d{7}$/.test(codigo)) : [];
+}
+
+function preferencias(url) {
+  const destino = new URL(url);
+  if (!destino.searchParams.has('eixos')) destino.searchParams.set('eixos', painel().dataset.eixos);
+  for (const nome of ['favoritos', 'comparar']) {
+    const ids = lista(nome);
+    if (ids.length) destino.searchParams.set(nome, ids.join(','));
+    else if (ler(chaves[nome], null) !== null) destino.searchParams.delete(nome);
+  }
+  return destino;
+}
+
+function sincronizar() {
+  const encaixe = document.querySelector('[data-map-slot]');
+  if (secaoMapa && encaixe && secaoMapa.parentElement !== encaixe) encaixe.append(secaoMapa);
+  const salvos = lista('favoritos');
+  for (const botao of document.querySelectorAll('[data-favorite]')) {
+    const salvo = salvos.includes(botao.dataset.favorite);
+    botao.setAttribute('aria-pressed', String(salvo));
+    botao.textContent = salvo ? '★' : '☆';
+  }
+  document.querySelector('[data-count]').textContent = lista('comparar').length;
+  const info = document.querySelector('#dados-mapa');
+  if (!mapa || !info) return;
+  const dados = JSON.parse(info.textContent);
+  mapa.updateScores(dados, calcularFaixas(dados.map(([, score]) => score)));
+  const uf = painel().dataset.uf;
+  if (uf !== ufAnterior) mapa.focusArea(uf ? dados.map(([id]) => id) : []);
+  const id = painel().dataset.id;
+  mapa.highlight(id, Boolean(id) && id !== municipioAnterior);
+  municipioAnterior = id;
+  ufAnterior = uf;
+}
+
+async function atualizar(url, registrar = true) {
+  pendente?.abort();
+  const controle = new AbortController();
+  pendente = controle;
+  painel().setAttribute('aria-busy', 'true');
+  retorno.textContent = 'Carregando…';
+  try {
+    const resposta = await fetch(preferencias(url), {
+      headers: { 'X-Kredita-Parcial': '1' }, signal: controle.signal, cache: 'no-store'
+    });
+    if (!resposta.ok) throw new Error();
+    const html = new DOMParser().parseFromString(await resposta.text(), 'text/html');
+    if (controle.signal.aborted) return;
+    const novo = html.querySelector('#conteudo');
+    if (!novo) throw new Error();
+    const campo = painel().contains(document.activeElement) ? document.activeElement : null;
+    const nome = campo?.name;
+    const selecao = campo?.type === 'search' ? [campo.selectionStart, campo.selectionEnd] : null;
+    painel().replaceWith(novo);
+    if (nome) {
+      const equivalente = novo.querySelector('[name="' + CSS.escape(nome) + '"]');
+      equivalente?.focus({ preventScroll: true });
+      if (equivalente?.type === 'search' && selecao) equivalente.setSelectionRange(...selecao);
+    }
+    if (registrar && url.href !== location.href) history.pushState(null, '', url);
+    if (registrar && url.searchParams.has('eixos') && url.searchParams.get('recorte') !== '1') {
+      guardar(chaves.eixos, novo.dataset.eixos.split(',').map(eixo => Number(eixo) - 1));
+    }
+    sincronizar();
+    retorno.textContent = '';
+  } catch {
+    if (!controle.signal.aborted) retorno.textContent = 'Falha ao atualizar. Tente novamente.';
+  } finally {
+    if (pendente === controle) painel().removeAttribute('aria-busy');
+  }
+}
+
+function filtros(formulario) {
+  const url = new URL(formulario.action, location.href);
+  url.search = new URLSearchParams(new FormData(formulario));
+  const eixos = url.searchParams.getAll('eixos');
+  if (eixos.length) url.searchParams.set('eixos', eixos.join(','));
+  else if (formulario.querySelector('[name=eixos]')) url.searchParams.set('eixos', '1,2,3,4');
+  return url;
+}
+
+function municipio(id) {
+  const url = new URL(location.href);
+  url.searchParams.set('id', id);
+  url.searchParams.delete('busca');
+  url.searchParams.set('eixos', painel().dataset.eixos);
+  atualizar(url);
+}
+
+document.addEventListener('submit', async evento => {
+  const form = evento.target;
+  if (form.matches('[data-parcial]')) {
+    evento.preventDefault();
+    atualizar(filtros(form));
+  }
+  if (form.matches('[data-sugestoes]')) {
+    evento.preventDefault();
+    const destino = document.querySelector('[data-sugestoes-resultado]');
+    try {
+      const resposta = await fetch(preferencias(filtros(form)));
+      if (!resposta.ok) throw new Error();
+      destino.innerHTML = await resposta.text();
+      sincronizar();
+    } catch {
+      destino.textContent = 'Não foi possível buscar municípios.';
+    }
+  }
+});
+
+document.addEventListener('click', async evento => {
+  const alvo = evento.target.closest('a, button, [data-ponto]');
+  if (!alvo) return;
+  const dados = alvo.dataset;
+  if ('menu' in dados) {
+    const abrir = document.body.classList.toggle('menu-aberto');
+    alvo.setAttribute('aria-expanded', String(abrir));
+  }
+  if (alvo.matches('a[data-parcial], a[data-pagina], a[data-municipio], a[data-exportar]') &&
+      (evento.button || evento.ctrlKey || evento.metaKey || evento.shiftKey || evento.altKey)) return;
+  if (alvo.matches('a[data-parcial], a[data-pagina]')) {
+    evento.preventDefault();
+    atualizar(new URL(alvo.href));
+  }
+  if (dados.municipio) {
+    evento.preventDefault();
+    municipio(dados.municipio);
+  }
+  if ('exportar' in dados) {
+    evento.preventDefault();
+    location.href = preferencias(alvo.href);
+  }
+  if ('refresh' in dados) atualizar(new URL(location.href), false);
+  if ('open' in dados) document.querySelector('#comparacao-busca').showModal();
+  if ('themeToggle' in dados) {
+    const escuro = document.documentElement.dataset.theme !== 'dark';
+    document.documentElement.dataset.theme = escuro ? 'dark' : 'light';
+    try {
+      localStorage.setItem('kredita-tema', escuro ? 'escuro' : 'claro');
+    } catch {
+      retorno.textContent = 'Preferência de tema indisponível neste navegador.';
+    }
+  }
+  if (dados.favorite) {
+    const ids = lista('favoritos');
+    guardar(chaves.favoritos, ids.includes(dados.favorite) ? ids.filter(id => id !== dados.favorite) : [...ids, dados.favorite]);
+    sincronizar();
+    if (pagina === 'favoritos') atualizar(new URL(location.href), false);
+  }
+  if (dados.add || dados.remove) {
+    const ids = lista('comparar');
+    if (dados.add && ids.includes(dados.add)) {
+      retorno.textContent = 'Município já está na comparação.';
+      return;
+    }
+    if (dados.add && ids.length >= 3) {
+      retorno.textContent = 'Remova um município antes de adicionar outro.';
+      return;
+    }
+    guardar(chaves.comparar, dados.add ? [...ids, dados.add] : ids.filter(id => id !== dados.remove));
+    sincronizar();
+    retorno.textContent = dados.add ? 'Município adicionado à comparação.' : 'Município removido.';
+    if (pagina === 'comparar') atualizar(new URL(location.href), false);
+  }
+  if ('save' in dados || 'share' in dados) {
+    const url = filtros(alvo.form);
+    url.searchParams.set('recorte', '1');
+    if ('save' in dados) {
+      const params = url.searchParams;
+      guardar('kredita-recorte-ranking', {
+        filters: ['busca', 'uf', 'porte', 'ordem'].map(chave => params.get(chave) || ''),
+        minimums: [1, 2, 3, 4].map(i => params.get('min' + i) ? Number(params.get('min' + i)) : null),
+        axes: (params.get('eixos') || '1,2,3,4').split(',').map(eixo => Number(eixo) - 1)
+      });
+      atualizar(url);
+    } else {
+      try {
+        await navigator.clipboard.writeText(url.href);
+        retorno.textContent = 'Link copiado.';
+      } catch {
+        retorno.textContent = url.href;
+      }
+    }
+  }
+  if ('restore' in dados) {
+    const salvo = ler('kredita-recorte-ranking', null);
+    if (!Array.isArray(salvo?.filters) || !Array.isArray(salvo?.axes) || !Array.isArray(salvo?.minimums)) {
+      retorno.textContent = 'Nenhum recorte salvo.';
+      return;
+    }
+    const url = new URL(location.pathname, location.origin);
+    url.searchParams.set('recorte', '1');
+    ['busca', 'uf', 'porte', 'ordem'].forEach((chave, i) => url.searchParams.set(chave, salvo.filters[i] || ''));
+    salvo.minimums.forEach((valor, i) => { if (valor !== null) url.searchParams.set('min' + (i + 1), valor); });
+    url.searchParams.set('eixos', salvo.axes.map(eixo => eixo + 1).join(','));
+    atualizar(url);
+  }
+  if (dados.ponto) {
+    alvo.closest('[data-timeline]').querySelector('[data-leitura]').textContent = dados.ponto;
+    const seletor = document.querySelector('[data-diferencas]');
+    if (seletor && alvo.closest('[data-sobreposto]') && dados.data) {
+      seletor.value = dados.data;
+      seletor.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  }
+});
+
+document.addEventListener('change', evento => {
+  if (evento.target.matches('[data-diferencas]')) {
+    for (const lista of document.querySelectorAll('[data-competencia]')) {
+      lista.hidden = lista.dataset.competencia !== evento.target.value;
+    }
+  }
+});
+document.addEventListener('keydown', evento => {
+  if (evento.target.matches('[data-ponto]') && ['Enter', ' '].includes(evento.key)) {
+    evento.preventDefault();
+    evento.target.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  }
+});
+window.addEventListener('popstate', () => atualizar(new URL(location.href), false));
+
+let esperaBusca;
+document.addEventListener('input', evento => {
+  const campo = evento.target;
+  if (pagina !== 'index' || !campo.matches('#conteudo [name=busca]')) return;
+  clearTimeout(esperaBusca);
+  esperaBusca = setTimeout(async () => {
+    const texto = campo.value;
+    const url = new URL('/site/sugestoes', location.origin);
+    url.searchParams.set('busca', texto);
+    url.searchParams.set('selecionar', '1');
+    try {
+      const resposta = await fetch(preferencias(url));
+      const html = await resposta.text();
+      if (resposta.ok && campo.isConnected && campo.value === texto) {
+        painel().querySelector('[data-busca-resultados]').innerHTML = texto.trim() ? html : '';
+        sincronizar();
+      }
+    } catch {
+      if (campo.isConnected) retorno.textContent = 'Não foi possível buscar municípios.';
+    }
+  }, 250);
+});
+
+sincronizar();
+const url = new URL(location.href);
+const eixos = ler(chaves.eixos);
+if (!url.searchParams.has('eixos') && Array.isArray(eixos) && eixos.length && eixos.length < 4) {
+  url.searchParams.set('eixos', eixos.map(eixo => eixo + 1).join(','));
+}
+if (url.href !== location.href || (['comparar', 'favoritos'].includes(pagina) && lista(pagina).length)) {
+  atualizar(url, false);
+}
+const elementoMapa = document.querySelector('#municipal-map');
+if (elementoMapa) {
+  elementoMapa.querySelector('[data-map-status]').textContent = 'Carregando mapa…';
+  import('./mapa.js').then(({ createMap, scoreBands }) => {
+    calcularFaixas = scoreBands;
+    return createMap(elementoMapa, municipio);
+  }).then(resultado => {
+    mapa = resultado;
+    elementoMapa.querySelector('[data-map-status]').textContent = '';
+    sincronizar();
+  }).catch(() => { elementoMapa.querySelector('[data-map-status]').textContent = 'Mapa indisponível.'; });
+}

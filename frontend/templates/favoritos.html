@@ -1,0 +1,7 @@
+{% extends 'base.html' %}{% from '_componentes.html' import tabela, seletor_eixos %}
+{% block conteudo %}<section class="panel copy-panel">
+    <form data-parcial method="get">{{ seletor_eixos(eixos,ativos) }}<button class="button">Aplicar eixos</button>
+    </form>{% if itens %}{{ tabela(itens,favoritos,'Score',numero) }}<a class="button" data-exportar
+        href="{{ exportar() }}">Exportar CSV</a>{% else %}<p>Salve municípios pela estrela no ranking ou no detalhe
+        municipal.</p>{% endif %}
+</section>{% endblock %}

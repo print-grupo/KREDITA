@@ -1,14 +1,13 @@
-# Kredita com PostgreSQL
+# Kredita com SQLite
 
-O `importar_kredita.py` aplica as migrações, valida `score_kredita.json`, publica a edição, a série histórica SCR e os dados de apostas no PostgreSQL e também pode atualizar indicadores via APIs públicas. O `app.py` (Flask) serve o site e a API.
+O `importar_kredita.py` cria o esquema SQLite em modo WAL (`kredita.db`), valida `score_kredita.json`, publica a edição, a série histórica SCR e os dados de apostas e também pode atualizar indicadores via APIs públicas. O `app.py` (Flask + Jinja) serve o site e a API.
 
 ## Rodar localmente
 
-Com Python e PostgreSQL instalados, crie um banco vazio chamado `kredita`. No PowerShell, use a URL do seu banco local.
+Com Python instalado, basta instalar o Flask, importar a base e iniciar o servidor (por padrão usa `kredita.db` na pasta do backend, ou o caminho definido em `DATABASE_URL`):
 
 ```powershell
 python -m pip install -r requirements.txt
-$env:DATABASE_URL = 'postgresql://usuario:senha@localhost:5432/kredita'
 python importar_kredita.py --validar
 python importar_kredita.py
 python app.py
@@ -18,38 +17,31 @@ Abra [o site local](http://127.0.0.1:5000/site/).
 
 ## Rodar com Docker
 
-Na raiz do repositório, com Docker Compose disponível, defina `KREDITA_DB_PASSWORD`:
+Na raiz do repositório, com Docker Compose disponível:
 
 ```powershell
-$env:KREDITA_DB_PASSWORD = [guid]::NewGuid().ToString('N')
 $env:KREDITA_HTTP_BIND = '127.0.0.1'
 docker compose up -d --build --wait
 ```
 
-Abra [o painel Docker](http://127.0.0.1:8788/site/).
+Abra [o painel Docker](http://127.0.0.1:8788/site/). O arquivo do banco SQLite fica persistido no volume Docker `data` (`/app/data/kredita.db`).
 
 ## Atualizar dados via APIs públicas ou novas edições
 
-Com o banco inicializado, abra a atualização guiada. Informe a competência, confira a prévia e digite `PUBLICAR` para confirmar. Enter cancela. As fontes são consultadas uma vez por execução.
+Para o fluxo guiado de atualização via APIs públicas (IBGE SIDRA, BCB Pix, BCB Agências, MDS CadÚnico, BCB SCR e ESTBAN), que mostra a prévia e pede confirmação antes de publicar:
 
 ```powershell
 python importar_kredita.py --guiado
 ```
 
-Se o painel roda em Docker e o serviço web está ativo, use a conexão já configurada no contêiner.
-
-```powershell
-docker exec -it kredita-revisao-web-1 python importar_kredita.py --guiado
-```
-
-Para rotinas chamadas por scripts, os comandos separados continuam disponíveis.
+Ou por linha de comando:
 
 ```powershell
 python importar_kredita.py --atualizar-apis --competencia 2026-01
 python importar_kredita.py --atualizar-apis --competencia 2026-01 --publicar
 ```
 
-Para publicar uma nova pasta exportada do Colab com reaproveitamento de até 3 competências anteriores e checagem de zeros do CAGED (`caged_i06_zeros.csv`):
+Para publicar uma nova pasta exportada com reaproveitamento de até 3 competências anteriores e checagem de zeros do CAGED (`caged_i06_zeros.csv`):
 
 ```powershell
 python importar_kredita.py caminho-da-nova-edicao --prever-recalculo
@@ -59,8 +51,7 @@ python importar_kredita.py caminho-da-nova-edicao --publicar-recalculado
 ## API
 
 - `GET /api/ranking?pagina=1&limite=50&uf=SP&busca=` retorna o ranking paginado.
-- `GET /api/municipios` retorna o catálogo e o resumo da edição atual (`?simulacao=1` inclui a série mensal SCR).
-- `GET /api/municipios?simulacao=somente&edicao=<id>` retorna as séries SCR para o dashboard em pontos `[competência, score, E1, E2, E3, E4]`.
+- `GET /api/municipios` retorna o catálogo e o resumo da edição atual (`?simulacao=1` ou `?simulacao=somente` inclui a série mensal SCR).
 - `GET /api/municipios/1100015` retorna o score e a auditoria dos indicadores (`?edicao=1` consulta uma edição publicada específica).
 - `GET /api/municipios/1100015/historico` retorna as edições publicadas e a simulação SCR em séries distintas.
 - `GET /api/apostas` retorna o estudo territorial mais recente e suas estimativas por abrangência.
@@ -69,6 +60,5 @@ python importar_kredita.py caminho-da-nova-edicao --publicar-recalculado
 ## Testes
 
 ```powershell
-$env:TEST_DATABASE_URL = 'postgresql://usuario:senha@localhost:5432/kredita_teste'
-python -m unittest discover -s tests
+python -m unittest discover -s tests -v
 ```

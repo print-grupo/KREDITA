@@ -1,21 +1,23 @@
+import contextlib
 import json
 import os
 import re
+import sqlite3
+import sys
 import unicodedata
 from pathlib import Path
 
 from flask import Blueprint, Flask, abort, current_app, jsonify, redirect, request, send_from_directory, url_for
+from consultas import painel, sugestoes
 
 site = Blueprint("kredita_site", __name__)
 BACKEND = Path(__file__).resolve().parent
 SITE = BACKEND / "kredita-demo" if (BACKEND / "kredita-demo").exists() else BACKEND.parent / "frontend"
 SERIES = ("publicado", "simulacao_scr")
-ACENTOS = "áàâãäéèêëíìîïóòôõöúùûüçñ"
-SEM_ACENTOS = "aaaaaeeeeiiiiooooouuuucn"
 RESUMO = """m.codigo_ibge AS id, m.nome, m.uf, m.regiao, s.populacao, s.score,
-           ARRAY[s.e1, s.e2, s.e3, s.e4] AS eixos, s.pos_brasil AS position"""
+           s.e1, s.e2, s.e3, s.e4, s.pos_brasil AS position"""
 JUNCAO = """FROM municipios m JOIN scores_municipais s USING (codigo_ibge)
-           WHERE s.edicao_id = %s"""
+           WHERE s.edicao_id = ?"""
 LOTE_SCR = """SELECT publicado.lote_id FROM edicoes_score publicado
               WHERE publicado.tipo = 'publicado' AND EXISTS (
                   SELECT 1 FROM edicoes_score simulacao
@@ -24,27 +26,94 @@ LOTE_SCR = """SELECT publicado.lote_id FROM edicoes_score publicado
               ORDER BY publicado.competencia DESC, publicado.id DESC LIMIT 1"""
 
 
-def conexao():
-    import psycopg
-    from psycopg.rows import dict_row
+def _sem_acento(texto):
+    if texto is None:
+        return ""
+    return "".join(c for c in unicodedata.normalize("NFD", str(texto).lower()) if not unicodedata.combining(c))
 
-    url = current_app.config.get("DATABASE_URL") or os.environ.get("DATABASE_URL")
-    if not url:
-        abort(503, description="Conexão com o PostgreSQL não configurada.")
+
+def _dict_row(cursor, row):
+    d = {col[0]: row[i] for i, col in enumerate(cursor.description)}
+    if "e1" in d and "e4" in d:
+        d["eixos"] = [d.pop("e1"), d.pop("e2"), d.pop("e3"), d.pop("e4")]
+    return d
+
+
+class ConexaoSQLite(sqlite3.Connection):
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        try:
+            return super().__exit__(exc_type, exc_val, exc_tb)
+        finally:
+            self.close()
+
+    @contextlib.contextmanager
+    def transaction(self):
+        if self.in_transaction:
+            self.execute("SAVEPOINT kredita_tx")
+            try:
+                yield
+            except Exception:
+                self.execute("ROLLBACK TO SAVEPOINT kredita_tx")
+                self.execute("RELEASE SAVEPOINT kredita_tx")
+                raise
+            else:
+                self.execute("RELEASE SAVEPOINT kredita_tx")
+        else:
+            self.execute("BEGIN IMMEDIATE")
+            try:
+                yield
+            except Exception:
+                self.rollback()
+                raise
+            else:
+                self.commit()
+
+    def execute(self, sql, parameters=()):
+        if not parameters and ";" in sql.strip().rstrip(";"):
+            cur = self.cursor()
+            for trecho in sql.split(";"):
+                if trecho.strip():
+                    cur.execute(trecho)
+            return cur
+        return super().execute(sql, parameters)
+
+
+def conectar_sqlite(url=None, *, como_dict=False):
+    alvo = url if url is not None else (
+        (current_app.config.get("DATABASE_URL") if current_app else None)
+        or os.environ.get("DATABASE_URL")
+        or str(BACKEND / "kredita.db")
+    )
+    if alvo.startswith("sqlite:///"):
+        alvo = alvo.removeprefix("sqlite:///")
+    conn = sqlite3.connect(alvo, timeout=30, isolation_level=None, factory=ConexaoSQLite)
+    conn.execute("PRAGMA foreign_keys = ON")
+    conn.execute("PRAGMA journal_mode = WAL")
+    conn.execute("PRAGMA synchronous = NORMAL")
+    conn.create_function("sem_acento", 1, _sem_acento)
+    if como_dict:
+        conn.row_factory = _dict_row
+    return conn
+
+
+def conexao():
     try:
-        return psycopg.connect(url, row_factory=dict_row, connect_timeout=5)
-    except psycopg.OperationalError:
-        abort(503, description="PostgreSQL indisponível.")
+        return conectar_sqlite(como_dict=True)
+    except sqlite3.Error:
+        abort(503, description="Banco SQLite indisponível.")
 
 
 def consulta_edicao(conn, edicao_id=None):
-    edicao = conn.execute(
-        """SELECT id, to_char(competencia, 'YYYY-MM') AS competencia, versao,
-                  calculado_em::text, publicado_em::text, lote_id
-           FROM edicoes_score WHERE tipo = 'publicado' AND (%s::bigint IS NULL OR id = %s)
-           ORDER BY competencia DESC, id DESC LIMIT 1""",
-        (edicao_id, edicao_id),
-    ).fetchone()
+    try:
+        edicao = conn.execute(
+            """SELECT id, substr(competencia, 1, 7) AS competencia, versao,
+                      calculado_em, publicado_em, lote_id
+               FROM edicoes_score WHERE tipo = 'publicado' AND (? IS NULL OR id = ?)
+               ORDER BY competencia DESC, id DESC LIMIT 1""",
+            (edicao_id, edicao_id),
+        ).fetchone()
+    except sqlite3.OperationalError:
+        edicao = None
     if edicao is None:
         if edicao_id is not None:
             abort(404, description="Edição publicada não encontrada.")
@@ -77,9 +146,20 @@ def erro_api(error):
 @site.get("/site/")
 @site.get("/site/<name>")
 def arquivos_site(name="index.html"):
+    if name.endswith(".html"):
+        return painel(name.removesuffix(".html"), sys.modules[__name__])
     if not re.fullmatch(r"[a-z-]+\.(html|css|js|geojson|png)", name):
         abort(404)
     return send_from_directory(SITE, name)
+
+
+@site.get("/site/sugestoes")
+def sugestoes_site():
+    with conexao() as conn:
+        edicao = consulta_edicao(conn)
+        itens = conn.execute(f"SELECT {RESUMO} {JUNCAO} ORDER BY m.nome, m.codigo_ibge",
+                             (edicao["id"],)).fetchall()
+    return sugestoes(itens)
 
 
 @site.get("/api/municipios")
@@ -96,8 +176,8 @@ def catalogo():
             por_codigo = {item["id"]: {} for item in items}
             eixos_por_codigo = {item["id"]: {} for item in items}
             for row in conn.execute(
-                f"""SELECT s.codigo_ibge, to_char(e.competencia, 'YYYY-MM') AS mes, s.score,
-                          ARRAY[s.e1, s.e2, s.e3, s.e4] AS eixos
+                f"""SELECT s.codigo_ibge, substr(e.competencia, 1, 7) AS mes, s.score,
+                          s.e1, s.e2, s.e3, s.e4
                    FROM edicoes_score e JOIN scores_municipais s ON s.edicao_id = e.id
                    WHERE e.tipo = 'simulacao_scr' AND e.lote_id = ({LOTE_SCR})""",
             ):
@@ -119,15 +199,18 @@ def catalogo():
 @site.get("/api/apostas")
 def apostas_api():
     with conexao() as conn:
-        estudo = conn.execute(
-            """SELECT id, estudo, inicio::text, fim::text, metrica, unidade, fonte
-               FROM estudos_apostas ORDER BY fim DESC, id DESC LIMIT 1"""
-        ).fetchone()
+        try:
+            estudo = conn.execute(
+                """SELECT id, estudo, inicio, fim, metrica, unidade, fonte
+                   FROM estudos_apostas ORDER BY fim DESC, id DESC LIMIT 1"""
+            ).fetchone()
+        except sqlite3.OperationalError:
+            estudo = None
         if estudo is None:
             abort(404, description="Nenhum estudo de apostas foi carregado.")
         territorios = conn.execute(
             """SELECT uf, valor, margem_pp, populacao_estimada FROM estimativas_apostas
-               WHERE estudo_id = %s ORDER BY uf""", (estudo["id"],)
+               WHERE estudo_id = ? ORDER BY uf""", (estudo["id"],)
         ).fetchall()
     return jsonify(**estudo, territorios=territorios)
 
@@ -143,21 +226,19 @@ def ranking_api():
     page = max(1, min(1_000_000, request.args.get("pagina", 1, type=int)))
     size = max(1, min(100, request.args.get("limite", 50, type=int)))
     uf = request.args.get("uf", "").upper()
-    busca = request.args.get("busca", "").strip().lower()[:100]
-    busca = "".join(c for c in unicodedata.normalize("NFD", busca) if not unicodedata.combining(c))
+    busca = _sem_acento(request.args.get("busca", "").strip()[:100])
     filtro = JUNCAO + """ AND s.score IS NOT NULL
-        AND (%s = '' OR m.uf = %s)
-        AND (%s = '' OR strpos(lower(translate(m.nome || ' ' || m.uf, %s, %s)), %s) > 0
-             OR m.codigo_ibge = %s)"""
+        AND (? = '' OR m.uf = ?)
+        AND (? = '' OR instr(sem_acento(m.nome || ' ' || m.uf), ?) > 0
+             OR m.codigo_ibge = ?)"""
     with conexao() as conn:
         edicao = consulta_edicao(conn)
-        params = (edicao["id"], uf, uf, busca, ACENTOS + ACENTOS.upper(),
-                  SEM_ACENTOS * 2, busca, busca)
+        params = (edicao["id"], uf, uf, busca, busca, busca)
         total = conn.execute(f"SELECT count(*) AS n {filtro}", params).fetchone()["n"]
         page = min(page, max(1, (total + size - 1) // size))
         items = conn.execute(
             f"""SELECT {RESUMO} {filtro} ORDER BY s.pos_brasil, m.codigo_ibge
-                LIMIT %s OFFSET %s""", (*params, size, (page - 1) * size),
+                LIMIT ? OFFSET ?""", (*params, size, (page - 1) * size),
         ).fetchall()
     return jsonify(edicao=edicao, municipios=items, total=total, pagina=page, limite=size)
 
@@ -168,38 +249,43 @@ def detalhe_api(codigo):
     edicao_id = parametro_edicao()
     with conexao() as conn:
         edicao = consulta_edicao(conn, edicao_id)
-        item = conn.execute(
-            f"""SELECT {RESUMO}, s.score_sem_cofator, s.cofator, s.m, s.pos_uf,
-                       s.pos_regiao, s.motivo_sem_score {JUNCAO} AND m.codigo_ibge = %s""",
-            (edicao["id"], codigo),
-        ).fetchone()
-        if item is None:
-            abort(404, description="Município não encontrado nesta edição.")
-        indicadores = conn.execute(
-            """SELECT si.indicador, si.nome, si.unidade, o.fonte, o.referencia, o.uf,
-                      CASE WHEN si.reaproveitado THEN 'reaproveitado'
-                           ELSE o.situacao END AS situacao,
-                      o.situacao AS situacao_original, o.valor_bruto, si.valor_usado, si.nota,
-                      si.nota_sem_cofator, si.peso
-               FROM score_indicadores si JOIN observacoes o ON o.id = si.observacao_id
-               WHERE si.edicao_id = %s AND si.codigo_ibge = %s ORDER BY si.indicador""",
-            (edicao["id"], codigo),
-        ).fetchall()
-    return jsonify(edicao=edicao, municipio=item, indicadores=indicadores)
+        return jsonify(**dados_detalhe(conn, edicao, codigo))
+
+
+def dados_detalhe(conn, edicao, codigo):
+    item = conn.execute(
+        f"""SELECT {RESUMO}, s.score_sem_cofator, s.cofator, s.m, s.pos_uf,
+                   s.pos_regiao, s.motivo_sem_score {JUNCAO} AND m.codigo_ibge = ?""",
+        (edicao["id"], codigo),
+    ).fetchone()
+    if item is None:
+        abort(404, description="Município não encontrado nesta edição.")
+    indicadores = conn.execute(
+        """SELECT si.indicador, si.nome, si.unidade, o.fonte, o.referencia, o.uf,
+                  CASE WHEN si.reaproveitado THEN 'reaproveitado'
+                       ELSE o.situacao END AS situacao,
+                  o.situacao AS situacao_original, o.valor_bruto, si.valor_usado, si.nota,
+                  si.nota_sem_cofator, si.peso
+           FROM score_indicadores si JOIN observacoes o ON o.id = si.observacao_id
+           WHERE si.edicao_id = ? AND si.codigo_ibge = ? ORDER BY si.indicador""",
+        (edicao["id"], codigo),
+    ).fetchall()
+    return dict(edicao=edicao, municipio=item, indicadores=indicadores)
 
 
 @site.get("/api/municipios/<codigo>/historico")
 def historico_api(codigo):
     codigo_valido(codigo)
     with conexao() as conn:
-        if conn.execute("SELECT 1 FROM municipios WHERE codigo_ibge = %s", (codigo,)).fetchone() is None:
+        consulta_edicao(conn)
+        if conn.execute("SELECT 1 FROM municipios WHERE codigo_ibge = ?", (codigo,)).fetchone() is None:
             abort(404, description="Município não encontrado.")
         rows = conn.execute(
-            f"""SELECT e.id AS edicao_id, e.tipo, to_char(e.competencia, 'YYYY-MM') AS competencia,
-                      e.versao, e.publicado_em::text, s.score,
-                      ARRAY[s.e1, s.e2, s.e3, s.e4] AS eixos
+            f"""SELECT e.id AS edicao_id, e.tipo, substr(e.competencia, 1, 7) AS competencia,
+                      e.versao, e.publicado_em, s.score,
+                      s.e1, s.e2, s.e3, s.e4
                FROM edicoes_score e LEFT JOIN scores_municipais s
-                    ON s.edicao_id = e.id AND s.codigo_ibge = %s
+                    ON s.edicao_id = e.id AND s.codigo_ibge = ?
                WHERE e.tipo = 'publicado' OR e.lote_id = ({LOTE_SCR})
                ORDER BY e.competencia, e.id""",
             (codigo,),
@@ -210,7 +296,7 @@ def historico_api(codigo):
     return jsonify(codigo_ibge=codigo, **series)
 
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder=str(SITE / "templates"))
 app.register_blueprint(site)
 
 

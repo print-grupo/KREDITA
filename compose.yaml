@@ -4,29 +4,13 @@ x-app: &app
   build: .
   image: kredita-revisao:local
   environment:
-    DATABASE_URL: postgresql://kredita:${KREDITA_DB_PASSWORD:?Defina KREDITA_DB_PASSWORD}@db:5432/kredita
+    DATABASE_URL: /app/data/kredita.db
+  volumes:
+    - data:/app/data
 
 services:
-  db:
-    image: postgres:17
-    environment:
-      POSTGRES_USER: kredita
-      POSTGRES_DB: kredita
-      POSTGRES_PASSWORD: ${KREDITA_DB_PASSWORD:?Defina KREDITA_DB_PASSWORD}
-    volumes:
-      - data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U kredita -d kredita"]
-      interval: 3s
-      timeout: 3s
-      retries: 15
-    restart: unless-stopped
-
   carga:
     <<: *app
-    depends_on:
-      db:
-        condition: service_healthy
     command: ["python", "importar_kredita.py"]
 
   web:

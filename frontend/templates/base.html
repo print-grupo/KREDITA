@@ -1,0 +1,17 @@
+{% if not parcial %}<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{ titulo }} · KREDITA</title>
+<script>try{const t=localStorage.getItem('kredita-tema');document.documentElement.dataset.theme=t==='escuro'||(t!=='claro'&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light'}catch{}</script>
+<link rel="stylesheet" href="/site/style.css"><script type="module" src="/site/atualizacao-parcial.js"></script></head>
+<body data-page="{{ pagina }}"><div class="app-shell"><aside class="sidebar" id="sidebar">
+<a href="/site/" class="brand"><span class="brand-mark"><img src="/site/logo.png" alt=""></span><span class="brand-name">KREDITA</span></a>
+<nav class="side-nav" aria-label="Menu principal">{% for chave in ['index','ranking','favoritos','comparar'] %}<a class="nav-link {{ 'active' if pagina == chave }}" href="{{ '/site/' if chave == 'index' else '/site/' ~ chave ~ '.html' }}" {% if pagina == chave %}aria-current="page"{% endif %}>{{ paginas[chave] }}</a>{% endfor %}</nav>
+<div class="menu-caption second-caption">Explorar</div><nav class="side-nav" aria-label="Explorar">{% for chave in ['guia','metodologia','apostas'] %}<a class="nav-link {{ 'active' if pagina == chave }}" href="/site/{{ chave }}.html">{{ paginas[chave] }}</a>{% endfor %}</nav></aside>
+<div class="main-area"><header class="topbar"><div class="topbar-left"><button class="hamburger" type="button" data-menu aria-controls="sidebar" aria-expanded="false" aria-label="Menu"><span></span><span></span><span></span></button><strong>{{ titulo }}</strong></div>
+<div class="topbar-actions"><button class="button button-outline" data-open type="button" aria-label="Adicionar à comparação">+ <span data-count>0</span></button><button id="theme-toggle" class="button button-outline" data-theme-toggle type="button" aria-label="Alternar modo escuro"><span class="theme-moon">☾</span><span class="theme-sun">☀</span></button><button class="button button-outline" data-refresh type="button">Atualizar dados</button></div>
+</header><dialog id="comparacao-busca"><form method="dialog"><button class="button" aria-label="Fechar">Fechar</button></form><form data-sugestoes action="/site/sugestoes" method="get"><label>Buscar município <input name="busca" type="search"></label><button>Buscar</button></form><div data-sugestoes-resultado></div><a href="/site/comparar.html">Abrir comparação</a></dialog>
+<main id="main" class="content"><header class="page-heading"><h1>{{ titulo }}</h1></header>
+{% if pagina == 'index' %}<section id="map-section" class="panel" aria-label="Mapa municipal"><div id="municipal-map" class="municipal-map"><div class="actions map-controls"><button class="button" type="button" data-zoom-in aria-label="Ampliar mapa">+</button><button class="button" type="button" data-zoom-out aria-label="Reduzir mapa">−</button><button class="button" type="button" data-map-reset>Brasil</button></div><p data-map-status role="status"></p></div></section>{% endif %}
+<p id="retorno" role="status"></p>{% endif %}
+<div id="conteudo" data-eixos="{{ eixos_url }}" data-uf="{{ filtros.uf }}" data-id="{{ selecionado.id if selecionado else '' }}">
+{% block conteudo %}{% endblock %}</div>
+{% if not parcial %}</main></div></div></body></html>{% endif %}

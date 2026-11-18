@@ -383,4 +383,14 @@ dialog::backdrop { background: #142a3780; }
   .topbar .axis-scope form { left: 0; right: auto; }
 }
 @media (prefers-reduced-motion: reduce) { .sidebar { transition: none; } }
+.map-controls { position: absolute; bottom: 8px; right: 8px; }
+#conteudo > section, #conteudo > .panel { margin-bottom: 16px; }
+.dashboard-metrics, .comparison-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 15px; margin-block: 16px; }
+[data-ponto] { cursor: pointer; }
+[data-ponto]:focus { stroke: currentColor; stroke-width: 3; }
+#comparacao-busca { width: min(92vw, 500px); border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+@media (max-width: 900px) {
+  body.menu-aberto .sidebar { transform: translateX(0); }
+  .topbar-actions { flex-wrap: wrap; justify-content: end; }
+}
 

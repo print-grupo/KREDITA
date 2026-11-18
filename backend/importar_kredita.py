@@ -1,4 +1,5 @@
 import argparse
+import contextlib
 import csv
 import hashlib
 import io
@@ -257,20 +258,23 @@ def recalcular_observacoes(conn, pacote, municipios, obs, detalhes, periodo, est
     mes = periodo.year * 12 + periodo.month
 
     for *valores, unidade in conn.execute(
-        """(SELECT DISTINCT ON (o.indicador,o.municipio,o.uf,o.fonte,o.referencia,si.unidade)
-                  o.indicador,o.municipio,o.uf,o.fonte,o.referencia,o.valor_bruto,o.situacao,si.unidade
-           FROM score_indicadores si JOIN observacoes o ON o.id=si.observacao_id
-           JOIN edicoes_score e ON e.id=si.edicao_id
-           WHERE e.tipo='publicado' AND e.competencia < %s AND e.versao=%s AND o.situacao='observado'
-           AND NOT si.reaproveitado
-           AND (o.indicador <> 'i06' OR o.valor_bruto <> 0 OR si.zero_i06_confirmado)
-           ORDER BY o.indicador,o.municipio,o.uf,o.fonte,o.referencia,si.unidade,
-                    e.competencia DESC,e.id DESC)
+        """SELECT indicador, municipio, uf, fonte, referencia, valor_bruto, situacao, unidade FROM (
+               SELECT o.indicador,o.municipio,o.uf,o.fonte,o.referencia,o.valor_bruto,o.situacao,si.unidade,
+                      ROW_NUMBER() OVER (
+                          PARTITION BY o.indicador,o.municipio,o.uf,o.fonte,o.referencia,si.unidade
+                          ORDER BY e.competencia DESC,e.id DESC
+                      ) AS rn
+               FROM score_indicadores si JOIN observacoes o ON o.id=si.observacao_id
+               JOIN edicoes_score e ON e.id=si.edicao_id
+               WHERE e.tipo='publicado' AND e.competencia < ? AND e.versao=? AND o.situacao='observado'
+               AND NOT si.reaproveitado
+               AND (o.indicador <> 'i06' OR o.valor_bruto <> 0 OR si.zero_i06_confirmado)
+           ) WHERE rn = 1
            UNION
            SELECT o.indicador,o.municipio,o.uf,o.fonte,o.referencia,o.valor_bruto,o.situacao,h.unidade
            FROM observacoes_historicas h JOIN observacoes o ON o.id=h.observacao_id
-           WHERE h.versao=%s AND o.situacao='observado'
-           AND (o.indicador <> 'i06' OR o.valor_bruto <> 0)""", (periodo, versao, versao)
+           WHERE h.versao=? AND o.situacao='observado'
+           AND (o.indicador <> 'i06' OR o.valor_bruto <> 0)""", (str(periodo), versao, versao)
     ):
         candidatos[(*valores[:4], unidade)].append(tuple(valores))
     for h, unidade in registro.items():
@@ -306,9 +310,9 @@ def recalcular_observacoes(conn, pacote, municipios, obs, detalhes, periodo, est
 
 def preparar_banco(conn):
     migrations = ROOT / "migrations"
-    with conn.transaction(), conn.cursor() as cur:
+    with conn.transaction():
         for migration in sorted(migrations.glob("*.sql")):
-            cur.execute(migration.read_text(encoding="utf-8"))
+            conn.execute(migration.read_text(encoding="utf-8"))
 
 
 def importar_apostas(conn, data=None):
@@ -326,18 +330,18 @@ def importar_apostas(conn, data=None):
     rows = data["territorios"]
     if len(rows) != 28 or {row["uf"] for row in rows} != UFS | {"BR"}:
         raise ValueError("A tabela precisa conter Brasil e as 27 UFs, sem duplicatas.")
-    with conn.transaction(), conn.cursor() as cur:
-        cur.execute((ROOT / "migrations/001_postgresql.sql").read_text(encoding="utf-8"))
-        cur.execute(
+    with conn.transaction():
+        conn.execute((ROOT / "migrations/001_postgresql.sql").read_text(encoding="utf-8"))
+        conn.execute(
             """INSERT INTO estudos_apostas (id, estudo, inicio, fim, metrica, unidade, fonte)
-               VALUES (%(id)s, %(estudo)s, %(inicio)s, %(fim)s, %(metrica)s, %(unidade)s, %(fonte)s)
+               VALUES (:id, :estudo, :inicio, :fim, :metrica, :unidade, :fonte)
                ON CONFLICT (id) DO UPDATE SET estudo=excluded.estudo, inicio=excluded.inicio,
                    fim=excluded.fim, metrica=excluded.metrica, unidade=excluded.unidade, fonte=excluded.fonte""",
             data,
         )
-        cur.executemany(
+        conn.executemany(
             """INSERT INTO estimativas_apostas (estudo_id, uf, valor, margem_pp, populacao_estimada)
-               VALUES (%s,%s,%s,%s,%s) ON CONFLICT (estudo_id, uf) DO UPDATE SET
+               VALUES (?,?,?,?,?) ON CONFLICT (estudo_id, uf) DO UPDATE SET
                valor=excluded.valor, margem_pp=excluded.margem_pp, populacao_estimada=excluded.populacao_estimada""",
             ((data["id"], r["uf"], r["valor"], r["margem_pp"], r["populacao_estimada"]) for r in rows),
         )
@@ -687,76 +691,73 @@ def atualizar_via_apis(conn, dados, mes_alvo, fetcher=buscar_json_api, fetcher_b
 
 
 def publicar(conn, dados, calculado_em=None, proveniencia=None):
-    from psycopg.types.json import Jsonb
-
     hashes, pacote, municipios, ranking, observacoes, detalhes, periodo, historico = dados
     hash_lote = digest(json.dumps(hashes, sort_keys=True).encode("utf-8"))
-    with conn.transaction(), conn.cursor() as cur:
-        cur.execute(
-            "INSERT INTO lotes_importacao(hash, arquivos) VALUES (%s,%s) "
-            "ON CONFLICT (hash) DO NOTHING RETURNING id", (hash_lote, Jsonb(hashes)),
-        )
-        lote = cur.fetchone()
+    calc_str = calculado_em.isoformat() if hasattr(calculado_em, "isoformat") else calculado_em
+    config_json = json.dumps(pacote["configuracao"], ensure_ascii=False)
+    with conn.transaction():
+        lote = conn.execute(
+            "INSERT INTO lotes_importacao(hash, arquivos) VALUES (?,?) "
+            "ON CONFLICT (hash) DO NOTHING RETURNING id",
+            (hash_lote, json.dumps(hashes, ensure_ascii=False)),
+        ).fetchone()
         if lote is None:
             return None
         lote_id = lote[0]
-        cur.executemany(
-            "INSERT INTO municipios VALUES (%s,%s,%s,%s) ON CONFLICT DO NOTHING",
+        conn.executemany(
+            "INSERT INTO municipios VALUES (?,?,?,?) ON CONFLICT DO NOTHING",
             ((k, m["municipio"], m["uf"], m["regiao"]) for k, m in sorted(municipios.items())),
         )
-        cur.executemany(
-            "INSERT INTO indicadores VALUES (%s,%s,%s) ON CONFLICT DO NOTHING",
+        conn.executemany(
+            "INSERT INTO indicadores VALUES (?,?,?) ON CONFLICT DO NOTHING",
             ((d["id"], d["nome"], d["unidade"]) for d in sorted(
                 pacote["indicadores"], key=lambda d: d["id"])),
         )
-        cur.executemany(
+        conn.executemany(
             """INSERT INTO observacoes
                (indicador, municipio, uf, fonte, referencia, valor_bruto, situacao, lote_id, hash)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT (hash) DO NOTHING""",
+               VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT (hash) DO NOTHING""",
             ((*obs, lote_id, h) for h, obs in sorted(observacoes.items())),
         )
-        cur.execute("SELECT hash, id FROM observacoes WHERE hash = ANY(%s)", (list(observacoes),))
-        ids = dict(cur.fetchall())
+        ids = dict(conn.execute("SELECT hash, id FROM observacoes").fetchall())
 
         def criar_edicao(mes, tipo):
-            cur.execute(
+            return conn.execute(
                 """INSERT INTO edicoes_score
                    (lote_id, competencia, calculado_em, versao, configuracao, tipo)
-                   VALUES (%s,%s,%s,%s,%s,%s) RETURNING id""",
-                (lote_id, mes, calculado_em, pacote["base_version"],
-                 Jsonb(pacote["configuracao"]), tipo),
-            )
-            return cur.fetchone()[0]
+                   VALUES (?,?,?,?,?,?) RETURNING id""",
+                (lote_id, str(mes), calc_str, pacote["base_version"], config_json, tipo),
+            ).fetchone()[0]
 
         edicao = criar_edicao(periodo, "publicado")
-        cur.executemany(
+        conn.executemany(
             """INSERT INTO scores_municipais
                (edicao_id, codigo_ibge, populacao, score, score_sem_cofator, e1, e2, e3, e4,
                 cofator, m, pos_brasil, pos_uf, pos_regiao, motivo_sem_score)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             ((edicao, codigo, *valores) for codigo, valores in ranking.items()),
         )
         reaproveitados, confirmados, registro = proveniencia if proveniencia is not None else (set(), set(), {})
-        cur.executemany(
+        conn.executemany(
             """INSERT INTO score_indicadores
                (edicao_id, codigo_ibge, indicador, observacao_id, nome, unidade,
                 valor_usado, nota, nota_sem_cofator, peso, reaproveitado, zero_i06_confirmado)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
             ((edicao, codigo, indicador, ids[h], *valores,
-              (codigo, indicador) in reaproveitados, indicador == "i06" and codigo in confirmados)
+              int((codigo, indicador) in reaproveitados), int(indicador == "i06" and codigo in confirmados))
              for (codigo, indicador), (h, *valores) in detalhes.items()),
         )
         if registro:
-            cur.executemany(
-                "INSERT INTO observacoes_historicas VALUES (%s,%s,%s) ON CONFLICT DO NOTHING",
+            conn.executemany(
+                "INSERT INTO observacoes_historicas VALUES (?,?,?) ON CONFLICT DO NOTHING",
                 ((ids[h], pacote["base_version"], unidade) for h, unidade in registro.items()),
             )
         for mes, grupo in sorted(historico.items()):
             simulacao = criar_edicao(mes, "simulacao_scr")
-            cur.executemany(
+            conn.executemany(
                 """INSERT INTO scores_municipais
                    (edicao_id, codigo_ibge, populacao, score, e1, e2, e3, e4)
-                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s)""",
+                   VALUES (?,?,?,?,?,?,?,?)""",
                 ((simulacao, codigo, *valores) for codigo, valores in grupo.items()),
             )
     return edicao
@@ -771,10 +772,6 @@ def coletar_atualizacao(dados, mes):
 def executar_atualizacao(conn, dados, mes, coletados, calculado_em, *,
                          gravar=False, esperada=None, mostrar_json=False):
     with conn.transaction():
-        if gravar:
-            conn.execute("SELECT pg_advisory_xact_lock(2631090)")
-        else:
-            conn.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY")
         lote, proveniencia, previa = atualizar_via_apis(conn, dados, mes, coletados=coletados)
         if esperada is not None and (lote[0], previa) != esperada:
             raise ValueError("A base mudou desde a prévia. Execute a atualização guiada novamente.")
@@ -843,12 +840,10 @@ def main():
         print(f"{len(ranking)} municípios, {sum(r[1] is not None for r in ranking.values())} scores disponíveis.")
         return
 
-    import psycopg
-    url = os.environ.get("DATABASE_URL")
-    if not url:
-        parser.error("Configure DATABASE_URL.")
+    from app import conectar_sqlite
+    url = os.environ.get("DATABASE_URL") or str(ROOT / "kredita.db")
 
-    with psycopg.connect(url) as conn:
+    with contextlib.closing(conectar_sqlite(url)) as conn:
         if args.guiado:
             try:
                 atualizacao_guiada(conn, dados, args.competencia, calculado_em)
@@ -867,8 +862,6 @@ def main():
             return
         preparar_banco(conn)
         if args.prever_recalculo or args.publicar_recalculado:
-            if args.publicar_recalculado:
-                conn.execute("SELECT pg_advisory_xact_lock(2631090)")
             dados, proveniencia, previa = preparar(conn, dados, args.pasta)
             print(json.dumps(previa, ensure_ascii=False), flush=True)
             if args.publicar_recalculado:

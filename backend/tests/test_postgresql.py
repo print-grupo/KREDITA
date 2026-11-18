@@ -149,27 +149,22 @@ class ExportacaoEReaproveitamentoTest(unittest.TestCase):
         self.assertIsNone(novos[3][ids[2]][1])
 
 
-@unittest.skipUnless(os.environ.get("TEST_DATABASE_URL"), "Configure TEST_DATABASE_URL")
 class PostgreSQLTest(unittest.TestCase):
     def test_publicacao_e_api(self):
-        import psycopg
-        from psycopg import sql
-        from psycopg.conninfo import make_conninfo
+        import contextlib
+        import sqlite3
 
-        from app import app
+        from app import app, conectar_sqlite
 
-        base = os.environ["TEST_DATABASE_URL"]
-        schema = "kredita_test_" + uuid.uuid4().hex
-        with psycopg.connect(base, autocommit=True) as admin:
-            admin.execute(sql.SQL("CREATE SCHEMA {}").format(sql.Identifier(schema)))
-            self.addCleanup(self.remover_schema, base, schema)
-        url = make_conninfo(base, options=f"-c search_path={schema}")
+        temp_dir = tempfile.TemporaryDirectory()
+        self.addCleanup(temp_dir.cleanup)
+        url = str(Path(temp_dir.name) / "kredita_test.db")
         config_anterior = {key: app.config.get(key) for key in ("TESTING", "DATABASE_URL")}
         self.addCleanup(app.config.update, config_anterior)
         app.config.update(TESTING=True, DATABASE_URL=url)
         client = app.test_client()
         dados = ler_exportacao(ROOT)
-        with psycopg.connect(url, autocommit=True) as conn:
+        with contextlib.closing(conectar_sqlite(url)) as conn:
             conn.execute((ROOT / "migrations/001_postgresql.sql").read_text(encoding="utf8"))
             self.assertEqual(client.get("/api/municipios").status_code, 503)
             edicao = publicar(conn, dados)
@@ -208,6 +203,20 @@ class PostgreSQLTest(unittest.TestCase):
             self.assertEqual(client.get("/municipio/5101837").location, "/site/municipio.html?id=5101837")
             with client.get("/site/") as response:
                 self.assertEqual(response.status_code, 200)
+            for pagina in ("ranking", "municipio", "favoritos", "comparar", "guia", "metodologia", "apostas"):
+                with self.subTest(pagina=pagina):
+                    resposta = client.get(f"/site/{pagina}.html?id=4106902&favoritos=4106902&comparar=4106902,3550308")
+                    self.assertEqual(resposta.status_code, 200)
+                    self.assertIn(b'id="conteudo"', resposta.data)
+            parcial = client.get("/site/ranking.html?uf=SP&busca=sao+paulo&eixos=1,2&min3=0",
+                                 headers={"X-Kredita-Parcial": "1"})
+            self.assertEqual(parcial.status_code, 200)
+            self.assertIn("São Paulo".encode(), parcial.data)
+            self.assertNotIn(b"<!doctype", parcial.data)
+            self.assertIn("X-Kredita-Parcial", parcial.vary)
+            csv = client.get("/site/favoritos.html?favoritos=4106902&exportar=csv")
+            self.assertEqual(csv.mimetype, "text/csv")
+            self.assertIn(b"4106902", csv.data)
             self.assertEqual(client.get("/site/base.json").status_code, 404)
 
             hashes, pacote, municipios, ranking, observacoes, detalhes, periodo, historico = dados
@@ -221,7 +230,7 @@ class PostgreSQLTest(unittest.TestCase):
             ranking_invalido = {
                 **ranking, chave[0]: (ranking[chave[0]][0], -1, *ranking[chave[0]][2:]),
             }
-            with self.assertRaises(psycopg.errors.CheckViolation):
+            with self.assertRaises(sqlite3.IntegrityError):
                 publicar(conn, (hash_revisao, pacote, municipios, ranking_invalido,
                                  revisadas, detalhes_novos, periodo, historico))
             self.assertEqual(conn.execute("SELECT count(*) FROM lotes_importacao").fetchone()[0], 1)
@@ -230,7 +239,7 @@ class PostgreSQLTest(unittest.TestCase):
                                proveniencia=(set(), {"5101837"}, {}))
             marcacoes = conn.execute(
                 """SELECT edicao_id, indicador, zero_i06_confirmado FROM score_indicadores
-                   WHERE edicao_id IN (%s, %s) AND codigo_ibge='5101837' AND indicador IN ('i05', 'i06')
+                   WHERE edicao_id IN (?, ?) AND codigo_ibge='5101837' AND indicador IN ('i05', 'i06')
                    ORDER BY edicao_id, indicador""",
                 (edicao, revisao),
             ).fetchall()
@@ -239,7 +248,7 @@ class PostgreSQLTest(unittest.TestCase):
             valores = conn.execute(
                 """SELECT o.valor_bruto FROM score_indicadores si
                    JOIN observacoes o ON o.id = si.observacao_id
-                   WHERE si.edicao_id IN (%s, %s) AND si.codigo_ibge = %s AND si.indicador = %s
+                   WHERE si.edicao_id IN (?, ?) AND si.codigo_ibge = ? AND si.indicador = ?
                    ORDER BY si.edicao_id""",
                 (edicao, revisao, *chave),
             ).fetchall()
@@ -286,14 +295,6 @@ class PostgreSQLTest(unittest.TestCase):
             final = client.get("/api/municipios/1100015/historico").get_json()
             self.assertEqual(len(final["publicado"]), 4)
             self.assertEqual(final["simulacao_scr"], series["simulacao_scr"])
-
-    @staticmethod
-    def remover_schema(base, schema):
-        import psycopg
-        from psycopg import sql
-
-        with psycopg.connect(base, autocommit=True) as conn:
-            conn.execute(sql.SQL("DROP SCHEMA {} CASCADE").format(sql.Identifier(schema)))
 
 
 if __name__ == "__main__":

@@ -2,6 +2,7 @@
 !Dockerfile
 !backend/
 !backend/app.py
+!backend/consultas.py
 !backend/importar_kredita.py
 !backend/score_kredita.json
 !backend/requirements.txt
