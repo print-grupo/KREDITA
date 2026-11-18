@@ -236,6 +236,17 @@ document.addEventListener('click', async evento => {
     sincronizar();
     if (pagina === 'favoritos') atualizar(new URL(location.href), false);
   }
+  if (dados.moveUp || dados.moveDown) {
+    const alvoId = dados.moveUp || dados.moveDown;
+    const ids = lista('favoritos');
+    const idx = ids.indexOf(alvoId);
+    const destino = dados.moveUp ? idx - 1 : idx + 1;
+    if (idx !== -1 && destino >= 0 && destino < ids.length) {
+      [ids[idx], ids[destino]] = [ids[destino], ids[idx]];
+      guardar(chaves.favoritos, ids);
+      atualizar(new URL(location.href), false);
+    }
+  }
   if (dados.add || dados.remove) {
     const ids = lista('comparar');
     if (dados.add && ids.includes(dados.add)) {

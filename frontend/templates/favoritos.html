@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% from '_componentes.html' import cabecalho, tabela, seletor_eixos %}
+{% from '_componentes.html' import cabecalho, acoes, seletor_eixos %}
 {% block conteudo %}
 {{ cabecalho('Favoritos', 'Municípios salvos neste navegador.') }}
 <div class="detail-actions">
@@ -12,8 +12,32 @@
   {% endif %}
 </div>
 {% if itens %}
+{% set score_label = 'Score geral' if ativos|length == 4 else 'Score dos eixos selecionados' %}
 <section class="panel ranking-panel" aria-label="Municípios favoritos">
-  {{ tabela(itens, favoritos, 'Score geral' if ativos|length == 4 else 'Score dos eixos selecionados', numero) }}
+  <div class="ranking-table-wrap" tabindex="0">
+    <table class="ranking-table ranking-table-municipios" role="table">
+      <thead>
+        <tr><th>Posição</th><th>Município</th><th>População</th><th>{{ score_label }}</th><th>Ordem</th><th>Ações</th></tr>
+      </thead>
+      <tbody>
+        {% for item in itens %}
+        <tr>
+          <td class="rotulo-movel" data-rotulo="Posição">{{ (item.position ~ 'º') if item.position else '—' }}</td>
+          <th scope="row">{{ item.nome }} · {{ item.uf }}</th>
+          <td class="rotulo-movel" data-rotulo="População">{{ numero(item.populacao, 0) }}</td>
+          <td class="rotulo-movel" data-rotulo="{{ score_label }}">{{ numero(item.score) }}</td>
+          <td class="rotulo-movel" data-rotulo="Ordem">
+            <div class="actions">
+              <button class="row-action" type="button" data-move-up="{{ item.id }}" {% if loop.first %}disabled{% endif %} aria-label="Mover {{ item.nome }} para cima" title="Subir na lista">↑</button>
+              <button class="row-action" type="button" data-move-down="{{ item.id }}" {% if loop.last %}disabled{% endif %} aria-label="Mover {{ item.nome }} para baixo" title="Descer na lista">↓</button>
+            </div>
+          </td>
+          <td class="acoes-municipio">{{ acoes(item, favoritos) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </section>
 {% else %}
 <p class="panel copy-panel">Salve municípios pela estrela no ranking ou no detalhe municipal.</p>

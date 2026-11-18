@@ -92,7 +92,7 @@
     <table class="ranking-table">
       <thead>
         <tr>
-          <th>Indicador</th><th>Fonte</th><th>Referência</th><th>Situação</th><th>Bruto</th><th>Usado</th><th>Nota</th><th>Peso</th>
+          <th>Indicador</th><th>Fonte</th><th>Referência</th><th>Bruto</th><th>Usado</th><th>Nota</th><th>Peso</th>
         </tr>
       </thead>
       <tbody>
@@ -101,7 +101,6 @@
           <th scope="row">{{ row.indicador|upper }} · {{ row.nome }}</th>
           <td>{{ row.fonte }}</td>
           <td>{{ row.referencia }}</td>
-          <td>{{ row.situacao }}</td>
           <td>{{ numero(row.valor_bruto, 2) }} {{ row.unidade }}</td>
           <td>{{ numero(row.valor_usado, 2) }}</td>
           <td>{{ numero(row.nota, 2) }}</td>
