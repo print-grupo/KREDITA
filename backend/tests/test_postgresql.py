@@ -155,6 +155,7 @@ class PostgreSQLTest(unittest.TestCase):
         import sqlite3
 
         from app import app, conectar_sqlite
+        from importar_kredita import preparar_banco
 
         temp_dir = tempfile.TemporaryDirectory()
         self.addCleanup(temp_dir.cleanup)
@@ -166,11 +167,28 @@ class PostgreSQLTest(unittest.TestCase):
         dados = ler_exportacao(ROOT)
         with contextlib.closing(conectar_sqlite(url)) as conn:
             conn.execute((ROOT / "migrations/001_postgresql.sql").read_text(encoding="utf8"))
+            conn.execute("INSERT INTO municipios VALUES ('0000001', 'Teste', 'SP', 'Sudeste')")
+            preparar_banco(conn)
+            preparar_banco(conn)
+            with self.assertRaises(sqlite3.IntegrityError):
+                conn.execute("INSERT INTO municipios VALUES (NULL, 'Teste', 'SP', 'Sudeste')")
+            with self.assertRaises(sqlite3.IntegrityError):
+                conn.execute("UPDATE municipios SET codigo_ibge=NULL WHERE codigo_ibge='0000001'")
+            conn.execute("DELETE FROM municipios WHERE codigo_ibge='0000001'")
             self.assertEqual(client.get("/api/municipios").status_code, 503)
             edicao = publicar(conn, dados)
             self.assertIsNotNone(edicao)
             self.assertIsNone(publicar(conn, dados))
             self.assertEqual(conn.execute("SELECT count(*) FROM lotes_importacao").fetchone()[0], 1)
+            for invalida in ("2026-99-01", "2026-00-01", "0000-01-01", "2026/01/01"):
+                with self.subTest(competencia=invalida), self.assertRaises(sqlite3.IntegrityError):
+                    conn.execute(
+                        """INSERT INTO edicoes_score(lote_id,competencia,versao,configuracao,tipo)
+                           SELECT lote_id,?,versao,configuracao,tipo FROM edicoes_score WHERE id=?""",
+                        (invalida, edicao),
+                    )
+                with self.assertRaises(sqlite3.IntegrityError):
+                    conn.execute("UPDATE edicoes_score SET competencia=? WHERE id=?", (invalida, edicao))
 
             pagina = client.get("/api/ranking?limite=2&pagina=2").get_json()
             self.assertEqual(pagina["total"], 5570)

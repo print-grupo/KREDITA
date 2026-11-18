@@ -41,9 +41,32 @@ function preferencias(url) {
   return destino;
 }
 
+function formatarFaixa(valor) {
+  return Number.isFinite(valor) ? valor.toFixed(1).replace('.', ',') : '—';
+}
+
+function renderizarLegenda(faixas) {
+  const legenda = document.querySelector('#map-legend');
+  if (!legenda) return;
+  const itens = faixas.map(({ min, max, color }, indice) => {
+    const intervalo = min === max
+      ? formatarFaixa(max)
+      : (indice ? '> ' + formatarFaixa(min) + ' a ' + formatarFaixa(max) : formatarFaixa(min) + ' a ' + formatarFaixa(max));
+    return `<li><span style="--swatch:${color}"></span>${intervalo}</li>`;
+  });
+  itens.push('<li><span style="--swatch:var(--map-unrated)"></span>Fora do recorte ou sem dados</li>');
+  legenda.innerHTML = itens.join('');
+}
+
 function sincronizar() {
   const encaixe = document.querySelector('[data-map-slot]');
   if (secaoMapa && encaixe && secaoMapa.parentElement !== encaixe) encaixe.append(secaoMapa);
+  const cabecalhoMapa = document.querySelector('#map-header-controls');
+  const slotCabecalho = secaoMapa?.querySelector('[data-map-header-slot]');
+  if (cabecalhoMapa && slotCabecalho) {
+    cabecalhoMapa.hidden = false;
+    slotCabecalho.replaceChildren(cabecalhoMapa);
+  }
   const salvos = lista('favoritos');
   for (const botao of document.querySelectorAll('[data-favorite]')) {
     const salvo = salvos.includes(botao.dataset.favorite);
@@ -54,7 +77,9 @@ function sincronizar() {
   const info = document.querySelector('#dados-mapa');
   if (!mapa || !info) return;
   const dados = JSON.parse(info.textContent);
-  mapa.updateScores(dados, calcularFaixas(dados.map(([, score]) => score)));
+  const faixas = calcularFaixas(dados.map(([, score]) => score));
+  renderizarLegenda(faixas);
+  mapa.updateScores(dados, faixas);
   const uf = painel().dataset.uf;
   if (uf !== ufAnterior) mapa.focusArea(uf ? dados.map(([id]) => id) : []);
   const id = painel().dataset.id;
@@ -138,6 +163,9 @@ document.addEventListener('submit', async evento => {
 });
 
 document.addEventListener('click', async evento => {
+  for (const aberto of document.querySelectorAll('details.axis-scope[open], details.ranking-triage[open]')) {
+    if (!aberto.contains(evento.target)) aberto.open = false;
+  }
   const alvo = evento.target.closest('a, button, [data-ponto]');
   if (!alvo) return;
   const dados = alvo.dataset;

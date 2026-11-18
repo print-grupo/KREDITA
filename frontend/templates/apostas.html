@@ -1,60 +1,65 @@
-{% extends 'base.html' %}{% block conteudo %}
-{% if apostas %}<section class="panel copy-panel">
+{% extends 'base.html' %}
+{% from '_componentes.html' import cabecalho %}
+{% block conteudo %}
+{{ cabecalho('Apostas', 'Levantamentos sobre apostas e comportamento financeiro.') }}
+{% if apostas %}
+<section class="panel copy-panel">
   <h2>Apostas esportivas por UF</h2>
   <p>{{ apostas.metrica }}</p>
-  <form data-parcial method="get"><label class="input-label">UF para comparar com o Brasil<select name="uf">
-        <option value="">Escolha uma UF</option>{% for row in apostas.territorios if row.uf != 'BR' %}<option {% if
-          row.uf==filtros.uf %}selected{% endif %}>{{ row.uf }}</option>{% endfor %}
-      </select></label><button class="button">Comparar</button></form>
-  {% for row in apostas.territorios if row.uf == 'BR' or row.uf == filtros.uf %}{% set margem = row.margem_pp or 0 %}{%
-  set baixo = [row.valor - margem, 0]|max %}{% set alto = [row.valor + margem, 100]|min %}<div class="bets-line">
-    <strong>{{ 'Brasil' if row.uf == 'BR' else row.uf }}</strong>
-    <div class="bets-track" aria-hidden="true"
-      style="--estimate:{{ row.valor }}%;--low:{{ baixo }}%;--width:{{ alto-baixo }}%"><span></span><i></i></div>
-    <span>{{ numero(row.valor,0) }}%{% if row.margem_pp is not none %} · ± {{ numero(row.margem_pp,0) }} p.p.{% endif
-      %}</span>
-  </div>{% endfor %}
-  <p>Escala de 0 a 100%. O traço indica a margem de erro.</p>
+  <form data-parcial method="get" class="actions" style="align-items:end;margin-bottom:14px">
+    <label class="input-label" style="flex:1">UF para comparar com o Brasil
+      <select name="uf">
+        <option value="">Escolha uma UF</option>
+        {% for row in apostas.territorios if row.uf != 'BR' %}
+        <option value="{{ row.uf }}" {% if row.uf == filtros.uf %}selected{% endif %}>{{ row.uf }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button class="button button-primary" type="submit">Comparar</button>
+  </form>
+  <div id="bets-chart">
+    {% for row in apostas.territorios if row.uf == 'BR' or row.uf == filtros.uf %}
+    {% set margem = row.margem_pp or 0 %}
+    {% set baixo = [row.valor - margem, 0]|max %}
+    {% set alto = [row.valor + margem, 100]|min %}
+    <div class="bets-line">
+      <strong>{{ 'Brasil' if row.uf == 'BR' else row.uf }}</strong>
+      <div class="bets-track" aria-hidden="true" style="--estimate:{{ row.valor }}%;--low:{{ baixo }}%;--width:{{ alto-baixo }}%"><span></span><i></i></div>
+      <span>{{ numero(row.valor, 0) }}%{% if row.margem_pp is not none %} · ± {{ numero(row.margem_pp, 0) }} p.p.{% endif %}</span>
+    </div>
+    {% endfor %}
+  </div>
+  <p class="subtitle">Escala de 0 a 100%. O traço indica a margem de erro.</p>
   <p><a href="{{ apostas.fonte }}">{{ apostas.estudo }} · Coleta de {{ apostas.inicio }} a {{ apostas.fim }}</a></p>
   <div class="ranking-table-wrap" tabindex="0">
     <table class="ranking-table">
-      <thead>
+      <thead><tr><th>UF</th><th>Estimativa</th><th>Margem de erro</th><th>Pessoas estimadas</th></tr></thead>
+      <tbody>
+        {% for row in apostas.territorios if row.uf != 'BR' %}
         <tr>
-          <th>UF</th>
-          <th>Estimativa</th>
-          <th>Margem de erro</th>
-          <th>Pessoas estimadas</th>
-        </tr>
-      </thead>
-      <tbody>{% for row in apostas.territorios if row.uf != 'BR' %}<tr>
           <th scope="row">{{ row.uf }}</th>
-          <td>{{ numero(row.valor,0) }}%</td>
-          <td>{{ numero(row.margem_pp,0) }} p.p.</td>
-          <td>{{ numero(row.populacao_estimada,0) }}</td>
-        </tr>{% endfor %}</tbody>
+          <td>{{ numero(row.valor, 0) }}%</td>
+          <td>{{ numero(row.margem_pp, 0) }} p.p.</td>
+          <td>{{ numero(row.populacao_estimada, 0) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
     </table>
   </div>
-</section>{% else %}<p>Estimativas indisponíveis.</p>{% endif %}
+</section>
+{% else %}
+<p class="panel copy-panel">Estimativas indisponíveis.</p>
+{% endif %}
 <section class="panel copy-panel bets-context">
   <h2>Outros levantamentos nacionais</h2>
   <h3>Ministério da Fazenda · Mercado regulado em 2025</h3>
   <p>Os operadores autorizados reportaram 25,2 milhões de participantes de apostas de quota fixa em 2025.
-    <a href="https://www.gov.br/fazenda/pt-br/acesso-a-informacao/auditorias/arquivos/rgi_mf_2025_vf.pdf">Relatório de
-      gestão da SPA</a>
-  </p>
+    <a href="https://www.gov.br/fazenda/pt-br/acesso-a-informacao/auditorias/arquivos/rgi_mf_2025_vf.pdf">Relatório de gestão da SPA</a></p>
   <h3>ANBIMA e Datafolha · Participação e perfil em 2025</h3>
-  <p>Na pesquisa com pessoas a partir de 16 anos, 17% declararam ter feito apostas online em 2025. Entre os apostadores,
-    66% eram homens e a idade média era de 35 anos.
-    <a
-      href="https://www.anbima.com.br/data/files/BE/05/B0/55/1EABD91008E6DAD9F82BA2A8/Raio-X-do-Investidor-9-edicao.pdf">Raio
-      X do Investidor Brasileiro, 9ª edição</a>
-  </p>
+  <p>Na pesquisa com pessoas a partir de 16 anos, 17% declararam ter feito apostas online em 2025. Entre os apostadores, 66% eram homens e a idade média era de 35 anos.
+    <a href="https://www.anbima.com.br/data/files/BE/05/B0/55/1EABD91008E6DAD9F82BA2A8/Raio-X-do-Investidor-9-edicao.pdf">Raio X do Investidor Brasileiro, 9ª edição</a></p>
   <h3>NielsenIQ · Hábitos de consumo dos lares</h3>
-  <p>A análise publicada em 2026 examina o orçamento de lares apostadores e inclui modalidades como loterias, jogos
-    online e bets.
-    <a
-      href="https://nielseniq.com/global/pt/insights/analysis/2026/bets-entram-no-orcamento-familiar-e-pressionam-o-consumo-o-novo-retrato-do-shopper-brasileiro/">Estudo
-      sobre apostas e consumo</a>
-  </p>
+  <p>A análise publicada em 2026 examina o orçamento de lares apostadores e inclui modalidades como loterias, jogos online e bets.
+    <a href="https://nielseniq.com/global/pt/insights/analysis/2026/bets-entram-no-orcamento-familiar-e-pressionam-o-consumo-o-novo-retrato-do-shopper-brasileiro/">Estudo sobre apostas e consumo</a></p>
 </section>
 {% endblock %}

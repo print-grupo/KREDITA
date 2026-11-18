@@ -1,61 +1,115 @@
-{% extends 'base.html' %}{% from '_componentes.html' import acoes, perfil, curva, seletor_eixos %}
-{% block conteudo %}<section class="panel copy-panel">
-    <h2>{{ selecionado.nome }} · {{ selecionado.uf }}</h2>
-    <p>Edição {{ edicao.competencia }} · Score {{ numero(selecionado.score) }} · Posição nacional {{
-        selecionado.position or '—' }}</p>
-    <p>População {{ numero(selecionado.populacao,0) }} · Score sem cofator {{
-        numero(detalhe.municipio.score_sem_cofator) }} · M {{ numero(detalhe.municipio.m) }} · φ {{
-        numero(detalhe.municipio.cofator,5) }}</p>{% if detalhe.municipio.motivo_sem_score %}<p>{{
-        detalhe.municipio.motivo_sem_score }}</p>{% endif %}{{ acoes(selecionado,favoritos) }}<form data-parcial
-        method="get"><input type="hidden" name="id" value="{{ selecionado.id }}">{{ seletor_eixos(eixos,ativos)
-        }}<button class="button">Aplicar eixos</button></form>{{ perfil(selecionado,eixos,ativos,numero) }}
-</section>
-<section class="panel chart-panel">
-    <h2>Edições publicadas</h2>{{ curva(publicado,numero) }}<h2>Simulação histórica SCR</h2>{{ curva(scr,numero) }}
-</section>
-{% if historico_edicoes|length > 1 %}<section class="panel copy-panel">
-    <h2>Variação entre edições publicadas</h2>
-    <form data-parcial method="get"><input type="hidden" name="id" value="{{ selecionado.id }}"><input type="hidden"
-            name="eixos" value="{{ eixos_url }}">{% for campo, rotulo in [('origem','Edição inicial'),('destino','Edição
-        final')] %}<label class="input-label">{{ rotulo }}<select name="{{ campo }}">{% for row in historico_edicoes %}
-                <option value="{{ row.edicao_id }}" {% if (origem if campo=='origem' else destino)==row.edicao_id
-                    %}selected{% endif %}>{{ row.competencia }} · #{{ row.edicao_id }}</option>{% endfor
-                %}</select></label>{% endfor %}<button class="button">Comparar edições</button></form>{% if
-    contribuicoes is defined %}<p>Score {{ numero(score_anterior) }} → {{ numero(score_atual) }}{% if score_atual is not
-        none and score_anterior is not none %} · Variação {{ numero(score_atual-score_anterior,2) }} pontos{% endif %}
-    </p>
-    <ul>{% for eixo, valor in contribuicoes %}<li>{{ eixo }} · {{ numero(valor,2) }} pontos</li>{% endfor %}</ul>{% for
-    antes, depois in mudancas %}<p>{{ depois.nome }} · {{ numero(antes.valor_usado) }} → {{ numero(depois.valor_usado)
-        }} · Nota {{ numero(antes.nota) }} → {{ numero(depois.nota) }} · {{ antes.referencia }} → {{ depois.referencia
-        }} · {{ antes.situacao }} → {{ depois.situacao }}</p>{% else %}<p>Nenhum indicador mudou.</p>{% endfor %}{%
-    endif %}
-</section>{% endif %}
-<section class="panel copy-panel">
-    <h2>Auditoria dos indicadores</h2>
-    <div class="ranking-table-wrap" tabindex="0">
-        <table class="ranking-table">
-            <thead>
-                <tr>
-                    <th>Indicador</th>
-                    <th>Fonte</th>
-                    <th>Referência</th>
-                    <th>Situação</th>
-                    <th>Bruto</th>
-                    <th>Usado</th>
-                    <th>Nota</th>
-                    <th>Peso</th>
-                </tr>
-            </thead>
-            <tbody>{% for row in detalhe.indicadores %}<tr>
-                    <th scope="row">{{ row.indicador|upper }} · {{ row.nome }}</th>
-                    <td>{{ row.fonte }}</td>
-                    <td>{{ row.referencia }}</td>
-                    <td>{{ row.situacao }}</td>
-                    <td>{{ numero(row.valor_bruto,2) }} {{ row.unidade }}</td>
-                    <td>{{ numero(row.valor_usado,2) }}</td>
-                    <td>{{ numero(row.nota,2) }}</td>
-                    <td>{{ numero(row.peso * 100,2) }}%</td>
-                </tr>{% endfor %}</tbody>
-        </table>
+{% extends 'base.html' %}
+{% from '_componentes.html' import cabecalho, acoes, perfil, curva, seletor_eixos %}
+{% block conteudo %}
+{{ cabecalho(selecionado.nome ~ ' · ' ~ selecionado.uf, 'Código IBGE ' ~ selecionado.id ~ ' · Competência ' ~ edicao.competencia) }}
+<div class="detail-actions">
+  <a class="button button-outline" href="/site/ranking.html">← Ranking</a>
+  <div class="actions">
+    <form data-parcial method="get">
+      <input type="hidden" name="id" value="{{ selecionado.id }}">
+      {{ seletor_eixos(eixos, ativos) }}
+    </form>
+    {{ acoes(selecionado, favoritos) }}
+  </div>
+</div>
+
+<div class="metric-grid selection-metrics">
+  <article class="metric-card primary-metric">
+    <div class="metric-top">{{ 'Score geral' if ativos|length == 4 else 'Score dos eixos selecionados' }}</div>
+    <div class="metric-value">{{ numero(selecionado.score) if selecionado.score is not none else 'Indisponível' }}{% if selecionado.score is not none %} <small>/ 100</small>{% endif %}</div>
+    <div class="metric-note">Score sem cofator {{ numero(detalhe.municipio.score_sem_cofator) }} · M {{ numero(detalhe.municipio.m) }} · φ {{ numero(detalhe.municipio.cofator, 5) }}</div>
+  </article>
+  <article class="metric-card">
+    <div class="metric-top">Posição nacional</div>
+    <div class="metric-value">{{ (selecionado.position ~ 'º') if selecionado.position else '—' }}</div>
+    <div class="metric-note">População {{ numero(selecionado.populacao, 0) }} habitantes</div>
+  </article>
+</div>
+
+{% if detalhe.municipio.motivo_sem_score %}
+<p class="panel copy-panel">{{ detalhe.municipio.motivo_sem_score }}</p>
+{% endif %}
+
+<div class="bottom-grid detail-charts">
+  <section class="panel chart-panel">
+    <h2>Perfil por eixo</h2>
+    {{ perfil(selecionado, eixos, ativos, numero) }}
+  </section>
+  <section class="panel chart-panel">
+    <h2>Histórico do score</h2>
+    <div class="history-series">
+      <h3>Edições publicadas</h3>
+      {{ curva(publicado, numero) }}
     </div>
-</section>{% endblock %}
+    <div class="history-series">
+      <h3>Simulação histórica SCR</h3>
+      <p class="subtitle">Variam I01, I03 e I11. As demais fontes mantêm a referência da edição.</p>
+      {{ curva(scr, numero) }}
+    </div>
+  </section>
+</div>
+
+{% if historico_edicoes|length > 1 %}
+<section class="panel ranking-panel">
+  <h2>Variação entre edições publicadas</h2>
+  <form data-parcial method="get" class="edition-filters">
+    <input type="hidden" name="id" value="{{ selecionado.id }}">
+    <input type="hidden" name="eixos" value="{{ eixos_url }}">
+    {% for campo, rotulo in [('origem','Edição de referência'),('destino','Edição comparada')] %}
+    <label class="input-label">{{ rotulo }}
+      <select name="{{ campo }}">
+        {% for row in historico_edicoes %}
+        <option value="{{ row.edicao_id }}" {% if (origem if campo=='origem' else destino)==row.edicao_id %}selected{% endif %}>{{ row.competencia }} · #{{ row.edicao_id }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    {% endfor %}
+    <div class="actions" style="align-self:end">
+      <button class="button button-primary" type="submit">Comparar edições</button>
+    </div>
+  </form>
+  {% if contribuicoes is defined %}
+  <div class="edition-results">
+    <p><strong>Score {{ numero(score_anterior) }} → {{ numero(score_atual) }}</strong>{% if score_atual is not none and score_anterior is not none %} · Variação {{ numero(score_atual-score_anterior, 2) }} pontos{% endif %}</p>
+    <ul class="history-values">
+      {% for eixo, valor in contribuicoes %}
+      <li><span>{{ eixo }}</span><strong>{{ numero(valor, 2) }} pontos</strong></li>
+      {% endfor %}
+    </ul>
+    {% for antes, depois in mudancas %}
+    <p>{{ depois.nome }} · {{ numero(antes.valor_usado) }} → {{ numero(depois.valor_usado) }} · Nota {{ numero(antes.nota) }} → {{ numero(depois.nota) }} · {{ antes.referencia }} → {{ depois.referencia }} · {{ antes.situacao }} → {{ depois.situacao }}</p>
+    {% else %}
+    <p class="subtitle">Nenhum indicador mudou.</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+</section>
+{% endif %}
+
+<section class="panel ranking-panel">
+  <h2>Auditoria dos indicadores</h2>
+  <div class="ranking-table-wrap" tabindex="0">
+    <table class="ranking-table">
+      <thead>
+        <tr>
+          <th>Indicador</th><th>Fonte</th><th>Referência</th><th>Situação</th><th>Bruto</th><th>Usado</th><th>Nota</th><th>Peso</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in detalhe.indicadores %}
+        <tr>
+          <th scope="row">{{ row.indicador|upper }} · {{ row.nome }}</th>
+          <td>{{ row.fonte }}</td>
+          <td>{{ row.referencia }}</td>
+          <td>{{ row.situacao }}</td>
+          <td>{{ numero(row.valor_bruto, 2) }} {{ row.unidade }}</td>
+          <td>{{ numero(row.valor_usado, 2) }}</td>
+          <td>{{ numero(row.nota, 2) }}</td>
+          <td>{{ numero(row.peso * 100, 2) }}%</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

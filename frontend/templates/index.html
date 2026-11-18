@@ -1,8 +1,146 @@
-{% extends 'base.html' %}{% from '_componentes.html' import acoes, seletores, perfil, curva, tabela %}
-{% block conteudo %}<section class="panel copy-panel"><form data-parcial method="get">{{ seletores(filtros,ufs,eixos,ativos) }}<button class="button button-primary">Aplicar filtros</button><a class="button button-quiet" data-parcial href="/site/?eixos={{ eixos_url }}">Limpar filtros</a></form>
-<div data-busca-resultados>{% if sugestoes %}<ul class="suggestions">{% for item in sugestoes %}<li><a data-municipio="{{ item.id }}" href="?id={{ item.id }}&eixos={{ eixos_url }}">{{ item.nome }} · {{ item.uf }}</a>{{ acoes(item,favoritos) }}</li>{% endfor %}</ul>{% endif %}</div>
-<form data-parcial method="get"><input type="hidden" name="uf" value="{{ filtros.uf }}"><input type="hidden" name="eixos" value="{{ eixos_url }}"><label class="input-label">Município no mapa<select name="id"><option value="">{{ 'Escolha um município' if filtros.uf else 'Escolha a UF nos filtros' }}</option>{% for item in lista_uf %}<option value="{{ item.id }}" {% if selecionado and selecionado.id == item.id %}selected{% endif %}>{{ item.nome }}</option>{% endfor %}</select></label><button class="button">Selecionar</button></form></section>
-<div id="selection" class="panel copy-panel">{% if selecionado %}<h2>{{ selecionado.nome }} · {{ selecionado.uf }}</h2>{{ acoes(selecionado,favoritos) }}<a class="button" data-parcial href="?uf={{ filtros.uf }}&eixos={{ eixos_url }}">Limpar seleção</a>{% else %}<p>Escolha um município na lista ou clique no mapa.</p>{% endif %}</div>
-<div class="dashboard-metrics">{% for nome, valor in [('Score',numero(selecionado.score) if selecionado else '—'),('Posição no ranking',selecionado.position if selecionado and selecionado.position else '—'),('Municípios no recorte',numero(total,0)),('Score médio do recorte',numero(media))] %}<article class="panel copy-panel"><h2>{{ nome }}</h2><strong>{{ valor }}</strong></article>{% endfor %}</div><div data-map-slot></div>
-{% if aposta %}<article class="panel copy-panel"><h2>Apostas · {{ 'Contexto estadual · ' ~ aposta.uf if aposta.uf != 'BR' else 'Brasil' }}</h2><p>{{ numero(aposta.valor,0) }}% · ± {{ numero(aposta.margem_pp,0) }} p.p. · {{ apostas.inicio[:4] }}</p><a href="/site/apostas.html?uf={{ aposta.uf }}">Ver pesquisa</a></article>{% endif %}
-<section class="panel chart-panel"><h2>{{ 'Perfil por eixo' if selecionado else 'Média por eixo' }}</h2>{{ perfil(perfil_atual,eixos,ativos,numero) }}</section><section class="panel chart-panel"><h2>{{ 'Simulação SCR' if selecionado else 'Simulação SCR do score médio' }}</h2>{{ curva(historico,numero) }}</section><p><a data-exportar href="{{ exportar() }}">Exportar CSV</a></p><script type="application/json" id="dados-mapa">{{ mapa|tojson }}</script>{% endblock %}
+{% extends 'base.html' %}
+{% from '_componentes.html' import cabecalho, acoes, seletores, perfil, curva %}
+{% block conteudo %}
+{{ cabecalho('Panorama territorial', 'Explore os municípios por estado, porte populacional e eixo de análise.') }}
+<section class="panel ranking-panel" aria-label="Busca e filtros do dashboard">
+  <form data-parcial method="get" class="rank-filters">
+    {{ seletores(filtros, ufs, eixos, ativos) }}
+    <div class="actions">
+      <button class="button button-primary" type="submit">Aplicar filtros</button>
+      <a class="button button-quiet" data-parcial href="/site/?eixos={{ eixos_url }}">Limpar filtros</a>
+    </div>
+  </form>
+  <div data-busca-resultados>
+    {% if sugestoes %}
+    <ul class="suggestions">
+      {% for item in sugestoes %}
+      <li>
+        <a class="suggestion-name" data-municipio="{{ item.id }}" href="?id={{ item.id }}&eixos={{ eixos_url }}">{{ item.nome }} · {{ item.uf }}</a>
+        {{ acoes(item, favoritos) }}
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+</section>
+
+{% if selecionado %}
+<section class="panel current-selection" aria-label="Município e score selecionados" aria-live="polite">
+  <div>
+    <span class="metric-top">Município selecionado</span>
+    <strong>{{ selecionado.nome }} · {{ selecionado.uf }}</strong>
+  </div>
+  <div>
+    <span class="metric-top">Score do município</span>
+    <strong>{{ numero(selecionado.score) }}{% if selecionado.score is not none %} <small>/ 100 · {{ selecionado.position }}º no ranking</small>{% endif %}</strong>
+  </div>
+</section>
+{% endif %}
+
+<section class="metric-grid selection-metrics" aria-label="Resumo do recorte" aria-live="polite">
+  <article class="metric-card dashboard-metric primary-metric">
+    <div class="metric-top">
+      <span>{{ 'Score médio do recorte' if ativos|length == 4 else 'Score médio dos eixos selecionados' }}</span>
+      <span class="metric-icon" aria-hidden="true">↗</span>
+    </div>
+    <div class="metric-value">{{ numero(media) }}{% if media is not none %} <small>/ 100</small>{% endif %}</div>
+    <div class="metric-note">Pontuação média</div>
+  </article>
+  <article class="metric-card dashboard-metric">
+    <div class="metric-top">
+      <span>Municípios no recorte</span>
+      <span class="metric-icon" aria-hidden="true">⌖</span>
+    </div>
+    <div class="metric-value">{{ numero(total, 0) }}</div>
+    <div class="metric-note">Municípios com score</div>
+  </article>
+  {% if aposta %}
+  <article class="metric-card dashboard-metric bets-card">
+    <div class="metric-top"><span>Apostas esportivas online</span><span class="metric-icon" aria-hidden="true">◉</span></div>
+    <div class="metric-value">{{ numero(aposta.valor, 1) }}% <small>{% if aposta.margem_pp is not none %}± {{ numero(aposta.margem_pp, 1) }} p.p.{% endif %}</small></div>
+    <div class="metric-note">{{ 'Contexto estadual · ' ~ aposta.uf if aposta.uf != 'BR' else 'Brasil' }} · DataSenado · {{ apostas.inicio[:4] }}</div>
+    <a href="/site/apostas.html{{ '?uf=' ~ aposta.uf if aposta.uf != 'BR' else '' }}">Explorar dados de apostas →</a>
+  </article>
+  {% endif %}
+</section>
+
+<div id="map-header-controls" hidden>
+  <div class="map-locator">
+    <form data-parcial method="get" class="actions" style="align-items:end">
+      <input type="hidden" name="uf" value="{{ filtros.uf }}">
+      <input type="hidden" name="eixos" value="{{ eixos_url }}">
+      <label class="input-label" style="flex:1">Município no mapa
+        <select name="id" {% if not filtros.uf %}disabled{% endif %}>
+          <option value="">{{ 'Escolha um município' if filtros.uf else 'Escolha a UF nos filtros' }}</option>
+          {% for item in lista_uf %}
+          <option value="{{ item.id }}" {% if selecionado and selecionado.id == item.id %}selected{% endif %}>{{ item.nome }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <button class="button button-outline" type="submit" {% if not filtros.uf %}disabled{% endif %}>Selecionar</button>
+    </form>
+  </div>
+  <div id="selection" class="map-selection" aria-live="polite">
+    {% if selecionado %}
+    <div>
+      <strong>{{ selecionado.nome }} · {{ selecionado.uf }}</strong>
+      <p>Score {{ numero(selecionado.score) }} / 100 · {{ selecionado.position or '—' }}º no ranking nacional</p>
+    </div>
+    <div class="actions">
+      <a class="button button-primary" href="/site/municipio.html?id={{ selecionado.id }}">Ver detalhes</a>
+      {{ acoes(selecionado, favoritos) }}
+      <a class="button button-quiet" data-parcial href="?uf={{ filtros.uf }}&eixos={{ eixos_url }}">Limpar seleção</a>
+    </div>
+    {% else %}
+    <p>Escolha um município na lista ou clique no mapa.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="dashboard-grid">
+  <div data-map-slot></div>
+  <section class="panel dashboard-preview" aria-labelledby="preview-title">
+    <div class="panel-heading">
+      <div>
+        <h2 id="preview-title">Prévia do ranking</h2>
+        <p>Até cinco municípios do recorte.</p>
+      </div>
+    </div>
+    <div class="ranking-table-wrap" tabindex="0" aria-label="Prévia do ranking">
+      <table class="ranking-table">
+        <thead>
+          <tr><th>Município</th><th>{{ 'Score geral' if ativos|length == 4 else 'Score dos eixos selecionados' }}</th><th>Ações</th></tr>
+        </thead>
+        <tbody>
+          {% for item in exemplos %}
+          <tr>
+            <th scope="row">{{ item.nome }} · {{ item.uf }}</th>
+            <td>{{ numero(item.score) }}</td>
+            <td>{{ acoes(item, favoritos) }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="3">Nenhum município corresponde aos filtros.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="preview-actions">
+      <a class="button button-primary" href="/site/ranking.html">Ver ranking completo →</a>
+      <a class="button button-outline" data-exportar href="{{ exportar() }}">Exportar CSV</a>
+    </div>
+  </section>
+  <div class="bottom-grid dashboard-charts" id="dashboard-charts" aria-label="Gráficos do dashboard">
+    <section class="panel chart-panel">
+      <h2>{{ 'Perfil por eixo' if selecionado else 'Média por eixo' }}</h2>
+      <p class="subtitle chart-context">{{ (selecionado.nome ~ ' · ' ~ selecionado.uf) if selecionado else 'Municípios do recorte' }}</p>
+      {{ perfil(perfil_atual, eixos, ativos, numero) }}
+    </section>
+    <section class="panel chart-panel">
+      <h2>{{ 'Simulação SCR' if selecionado else 'Simulação SCR do score médio' }}</h2>
+      <p class="subtitle chart-context">Média dos municípios do recorte com dados nos eixos ativos em cada mês.</p>
+      {{ curva(historico, numero) }}
+    </section>
+  </div>
+</div>
+<script type="application/json" id="dados-mapa">{{ mapa|tojson }}</script>
+{% endblock %}

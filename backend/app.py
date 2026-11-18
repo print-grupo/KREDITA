@@ -148,7 +148,7 @@ def erro_api(error):
 def arquivos_site(name="index.html"):
     if name.endswith(".html"):
         return painel(name.removesuffix(".html"), sys.modules[__name__])
-    if not re.fullmatch(r"[a-z-]+\.(html|css|js|geojson|png)", name):
+    if not re.fullmatch(r"[a-z-]+\.(css|js|geojson|png)", name):
         abort(404)
     return send_from_directory(SITE, name)
 
@@ -311,15 +311,12 @@ def municipio_detalhe(cod_ibge):
 
 
 def garantir_banco():
-    with conectar_sqlite() as conn:
-        try:
-            if conn.execute("SELECT 1 FROM edicoes_score LIMIT 1").fetchone():
-                return
-        except sqlite3.OperationalError:
-            pass
-        from importar_kredita import ROOT, importar_apostas, ler_exportacao, preparar_banco, publicar
+    from importar_kredita import ROOT, importar_apostas, ler_exportacao, preparar_banco, publicar
 
+    with conectar_sqlite() as conn:
         preparar_banco(conn)
+        if conn.execute("SELECT 1 FROM edicoes_score LIMIT 1").fetchone():
+            return
         publicar(conn, ler_exportacao(ROOT))
         importar_apostas(conn)
 

@@ -1,30 +1,68 @@
-{% extends 'base.html' %}{% block conteudo %}
-<section class="panel copy-panel"><h2>Como o score é calculado</h2>
-    <h3>1. Converter os dados em notas</h3>
-    <p>Cada indicador tem uma fórmula para seu valor bruto e outra para a nota de 0 a 100. No I06, um saldo de −3 empregos formais por mil habitantes resulta em 50 + 50 × (−3 ÷ 15) = <strong>40 pontos</strong>. Um saldo confirmado de zero vale 50 pontos.</p>
-    <h3>2. Calcular o índice municipal e o cofator</h3>
-    <p><strong>M = soma das notas sem ajuste × seus pesos no índice.</strong> I02 vale 30%. I04, I05, I06, I07, I09 e I16 valem 10% cada. I13 e I14 valem 5% cada.</p>
-    <p><strong>φ = 0,2 × (M ÷ 50 − 1)</strong>, limitado entre −0,2 e +0,2. Com M igual a 50, o cofator é zero. A fórmula multiplica os valores estaduais de I01, I03 e I11 por (1 − φ) e o de I08 por (1 + φ), antes de recalcular suas notas.</p>
-    <h3>3. Combinar os eixos</h3>
-    <p>A nota do eixo é a soma de cada nota multiplicada por seu peso dentro do eixo, dividida pela soma desses pesos.</p>
-    <p><strong>Score geral = (Risco + Capacidade + Inclusão + Demografia) ÷ 4.</strong> Cada eixo responde por 25%. Para obter o score sem cofator, use a mesma média com as notas anteriores ao ajuste estadual.</p>
-    <p>O seletor <strong>Eixos do score</strong> permite consultar a média e a posição nacional usando apenas os eixos marcados. A edição publicada usa os quatro eixos.</p>
-    <p>A população absoluta (I15) tem peso zero. Ela é exibida no painel e serve de denominador em indicadores por habitante.</p>
-    <h2>Exemplo auditado · Curitiba · dezembro de 2025</h2>
-    <p>Com M = 71,24, o cofator foi 0,08495. Os quatro eixos tiveram notas 68,31, 67,43, 24,31 e 63,73. A média, calculada antes do arredondamento, foi <strong>55,95</strong>. O score sem cofator foi <strong>52,17</strong>.</p>
-    <h2>Referências e lacunas</h2>
-    <p>A competência identifica a edição do score. A referência indica a data do dado de origem e pode ser diferente para cada indicador.</p>
-    <ul><li><strong>Observado</strong> · valor coletado na fonte.</li><li><strong>Estimado</strong> · valor obtido por uma regra da metodologia, como a média da UF para salário sem admissões válidas.</li>
+{% extends 'base.html' %}
+{% from '_componentes.html' import cabecalho %}
+{% block conteudo %}
+{{ cabecalho('Metodologia e fontes', 'Escala, cobertura e origem dos dados exibidos.') }}
+<section class="panel copy-panel">
+  <h2>Como o score é calculado</h2>
+  <h3>1. Converter os dados em notas</h3>
+  <p>Cada indicador tem uma fórmula para seu valor bruto e outra para a nota de 0 a 100. No I06, um saldo de −3 empregos formais por mil habitantes resulta em 50 + 50 × (−3 ÷ 15) = <strong>40 pontos</strong>. Um saldo confirmado de zero vale 50 pontos.</p>
+  <h3>2. Calcular o índice municipal e o cofator</h3>
+  <p><strong>M = soma das notas sem ajuste × seus pesos no índice.</strong> I02 vale 30%. I04, I05, I06, I07, I09 e I16 valem 10% cada. I13 e I14 valem 5% cada.</p>
+  <p><strong>φ = 0,2 × (M ÷ 50 − 1)</strong>, limitado entre −0,2 e +0,2. Com M igual a 50, o cofator é zero. A fórmula multiplica os valores estaduais de I01, I03 e I11 por (1 − φ) e o de I08 por (1 + φ), antes de recalcular suas notas.</p>
+  <h3>3. Combinar os eixos</h3>
+  <p>A nota do eixo é a soma de cada nota multiplicada por seu peso dentro do eixo, dividida pela soma desses pesos.</p>
+  <p><strong>Score geral = (Risco + Capacidade + Inclusão + Demografia) ÷ 4.</strong> Cada eixo responde por 25%. Para obter o score sem cofator, use a mesma média com as notas anteriores ao ajuste estadual.</p>
+  <p>O seletor <strong>Eixos do score</strong> permite consultar a média e a posição nacional usando apenas os eixos marcados. A edição publicada usa os quatro eixos.</p>
+  <p>A população absoluta (I15) tem peso zero. Ela é exibida no painel e serve de denominador em indicadores por habitante.</p>
+  <h2>Exemplo auditado · Curitiba · dezembro de 2025</h2>
+  <p>Com M = 71,24, o cofator foi 0,08495. Os quatro eixos tiveram notas 68,31, 67,43, 24,31 e 63,73. A média, calculada antes do arredondamento, foi <strong>55,95</strong>. O score sem cofator foi <strong>52,17</strong>.</p>
+  <h2>Referências e lacunas</h2>
+  <p>A competência identifica a edição do score. A referência indica a data do dado de origem e pode ser diferente para cada indicador.</p>
+  <ul>
+    <li><strong>Observado</strong> · valor coletado na fonte.</li>
+    <li><strong>Estimado</strong> · valor obtido por uma regra da metodologia, como a média da UF para salário sem admissões válidas.</li>
     <li><strong>Reaproveitado</strong> · valor de uma referência anterior usado em uma nova edição, com a referência original visível.</li>
-    <li><strong>Ausente</strong> · valor indisponível. Sem um indicador obrigatório, o município fica sem score.</li></ul>
-    <h2>Edições e simulação SCR</h2><p>As edições publicadas guardam os resultados e fontes usados em cada publicação. A simulação mensal varia I01, I03 e I11 do SCR e mantém os demais indicadores na referência da edição.</p>
-    <p><a href="apostas.html">Consultar a metodologia e as fontes dos dados de apostas</a></p></section>
-    <section class="panel copy-panel bets-context"><h2>Indicadores e fontes</h2>
-      <div class="ranking-table-wrap" tabindex="0" aria-label="Indicadores do score"><table class="ranking-table">
+    <li><strong>Ausente</strong> · valor indisponível. Sem um indicador obrigatório, o município fica sem score.</li>
+  </ul>
+  <h2>Edições e simulação SCR</h2>
+  <p>As edições publicadas guardam os resultados e fontes usados em cada publicação. A simulação mensal varia I01, I03 e I11 do SCR e mantém os demais indicadores na referência da edição.</p>
+  <p><a href="apostas.html">Consultar a metodologia e as fontes dos dados de apostas</a></p>
+</section>
+<section class="panel copy-panel bets-context">
+  <h2>Indicadores e fontes</h2>
+  <div class="ranking-table-wrap" tabindex="0" aria-label="Indicadores do score">
+    <table class="ranking-table">
       <thead><tr><th>Indicador</th><th>Fonte</th><th>Unidade</th><th>Peso no score</th><th>Periodicidade</th></tr></thead>
-      <tbody>{% for ind in indicadores %}<tr><th>{{ ind.id|upper }} · {{ ind.nome }}</th><td>{{ ind.fonte }}</td><td>{{ ind.unidade }}</td><td>{{ numero(pesos.get(ind.id,0)*100,2) }}%</td><td>{{ frequencias[loop.index0] }}</td></tr>{% endfor %}</tbody></table></div>
-      <p><a href="https://www.ibge.gov.br/geociencias/todos-os-produtos-geociencias/15774-malhas.html">Malha Municipal do IBGE</a></p></section>
-    <section class="panel copy-panel bets-context"><h2>Fórmula de cada indicador</h2>
-      <p>Nas fórmulas, <strong>x</strong> é o valor usado. <strong>t</strong> é esse valor limitado à faixa indicada e <strong>ln</strong> é o logaritmo natural. Para os quatro indicadores estaduais ajustados, x já inclui o cofator.</p>
-      <div class="method-formulas">{% for ind in indicadores %}<details><summary>{{ ind.id|upper }} · {{ ind.nome }}</summary><div class="formula-block"><h3>Valor bruto</h3><div class="formula-expression">{{ ind.rawFormula }}</div></div><div class="formula-block"><h3>Nota</h3>{% for condicao, expressao, limite in formulas(ind) %}<div class="formula-case"><div class="formula-condition">{{ condicao }}</div><div class="formula-expression">{{ expressao }}</div><p class="formula-limit">{{ limite }}</p></div>{% endfor %}</div><ul>{% for passo in ind.steps %}<li>{{ passo }}</li>{% endfor %}</ul><p>{{ ind.caveat }}</p></details>{% endfor %}</div></section>
+      <tbody>
+        {% for ind in indicadores %}
+        <tr><th scope="row">{{ ind.id|upper }} · {{ ind.nome }}</th><td>{{ ind.fonte }}</td><td>{{ ind.unidade }}</td><td>{{ numero(pesos.get(ind.id,0)*100,2) }}%</td><td>{{ frequencias[loop.index0] }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p><a href="https://www.ibge.gov.br/geociencias/todos-os-produtos-geociencias/15774-malhas.html">Malha Municipal do IBGE</a></p>
+</section>
+<section class="panel copy-panel bets-context">
+  <h2>Fórmula de cada indicador</h2>
+  <p>Nas fórmulas, <strong>x</strong> é o valor usado. <strong>t</strong> é esse valor limitado à faixa indicada e <strong>ln</strong> é o logaritmo natural. Para os quatro indicadores estaduais ajustados, x já inclui o cofator.</p>
+  <div class="method-formulas">
+    {% for ind in indicadores %}
+    <details>
+      <summary>{{ ind.id|upper }} · {{ ind.nome }}</summary>
+      <div class="formula-block"><h3>Valor bruto</h3><div class="formula-expression">{{ ind.rawFormula }}</div></div>
+      <div class="formula-block"><h3>Nota</h3>
+        {% for condicao, expressao, limite in formulas(ind) %}
+        <div class="formula-case">
+          {% if condicao %}<div class="formula-condition">{{ condicao }}</div>{% endif %}
+          <div class="formula-expression">{{ expressao }}</div>
+          {% if limite %}<p class="formula-limit">{{ limite }}</p>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      <ul>{% for passo in ind.steps %}<li>{{ passo }}</li>{% endfor %}</ul>
+      <p>{{ ind.caveat }}</p>
+    </details>
+    {% endfor %}
+  </div>
+</section>
 {% endblock %}

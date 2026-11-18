@@ -309,10 +309,19 @@ def recalcular_observacoes(conn, pacote, municipios, obs, detalhes, periodo, est
 
 
 def preparar_banco(conn):
+    import sqlite3
+
     migrations = ROOT / "migrations"
     with conn.transaction():
         for migration in sorted(migrations.glob("*.sql")):
-            conn.execute(migration.read_text(encoding="utf-8"))
+            comando = ""
+            for linha in migration.read_text(encoding="utf-8").splitlines(keepends=True):
+                comando += linha
+                if sqlite3.complete_statement(comando):
+                    conn.cursor().execute(comando)
+                    comando = ""
+            if comando.strip():
+                raise ValueError(f"Comando SQL incompleto em {migration.name}.")
 
 
 def importar_apostas(conn, data=None):

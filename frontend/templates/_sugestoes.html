@@ -1,2 +1,15 @@
 {% from '_componentes.html' import acoes %}
-<ul class="suggestions">{% for item in itens %}<li>{% if selecionar %}<a data-municipio="{{ item.id }}" href="/site/?id={{ item.id }}">{{ item.nome }} · {{ item.uf }}</a>{% else %}{{ item.nome }} · {{ item.uf }}{% endif %} {{ acoes(item,favoritos) }}</li>{% else %}<li>Nenhum município encontrado.</li>{% endfor %}</ul>
+<ul class="suggestions">
+  {% for item in itens %}
+  <li>
+    {% if selecionar %}
+    <a class="suggestion-name" data-municipio="{{ item.id }}" href="/site/?id={{ item.id }}">{{ item.nome }} · {{ item.uf }}</a>
+    {% else %}
+    <span class="suggestion-name">{{ item.nome }} · {{ item.uf }}</span>
+    {% endif %}
+    {{ acoes(item, favoritos) }}
+  </li>
+  {% else %}
+  <li class="empty-result">Nenhum município encontrado.</li>
+  {% endfor %}
+</ul>
