@@ -10,15 +10,45 @@ from unittest.mock import patch
 from importar_kredita import (
     BASE,
     atualizar_via_apis,
+    atualizacao_guiada,
     checar_metodo,
     digest,
     escolher,
+    executar_atualizacao,
     ler_exportacao,
     preparar,
     publicar,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+class AtualizacaoGuiadaTest(unittest.TestCase):
+    def test_confirmacao_cancelamento_e_base_alterada(self):
+        lote = ({"hash": "original"}, None, None, {"1": [100, 50]})
+        previa = dict(competencia="2026-01", observacoes_atualizadas=1,
+                      observacoes_reaproveitadas=2, municipios_ganharam_score=0,
+                      municipios_perderam_score=0)
+        dados = (None, None, {})
+        for resposta, mudou in (("", False), ("PUBLICAR", False), ("PUBLICAR", True)):
+            with self.subTest(resposta=resposta, mudou=mudou):
+                conn = unittest.mock.MagicMock()
+                revisado = ({"hash": "alterado"}, *lote[1:]) if mudou else lote
+                with patch("builtins.input", return_value=resposta), patch("builtins.print"), \
+                     patch("importar_kredita.coletar_fontes_publicas", return_value={}) as coletar, \
+                     patch("importar_kredita.atualizar_via_apis",
+                           side_effect=[(lote, None, previa), (revisado, None, previa)]), \
+                     patch("importar_kredita.publicar", return_value=2) as publicar_lote:
+                    if mudou:
+                        with self.assertRaisesRegex(ValueError, "base mudou"):
+                            atualizacao_guiada(conn, dados, "2026-01", None)
+                    else:
+                        atualizacao_guiada(conn, dados, "2026-01", None)
+                    coletar.assert_called_once()
+                    if resposta and not mudou:
+                        publicar_lote.assert_called_once_with(conn, lote, None, None)
+                    else:
+                        publicar_lote.assert_not_called()
 
 
 class ExportacaoEReaproveitamentoTest(unittest.TestCase):
@@ -49,12 +79,20 @@ class ExportacaoEReaproveitamentoTest(unittest.TestCase):
                 return [{}, {"D1C": "1100015", "D3C": "2024", "V": "22000"}, {"D1C": "1100015", "D3C": "2025", "V": "22787"}]
             return {}
 
-        novos, n, prov = atualizar_via_apis(self.dados, "2026-01", fetcher=mock_json, fetcher_bytes=lambda _: b"")
-        self.assertGreaterEqual(n, 1)
+        base_caged = observacoes[detalhes["1100015", "i06"][0]]
+        conn = unittest.mock.Mock()
+        conn.execute.side_effect = [[(*base_caged[:4], "2025-12", 0.0, "observado",
+                                      detalhes["1100015", "i06"][2])], []]
+        novos, prov, previa = atualizar_via_apis(
+            conn, self.dados, "2026-01", fetcher=mock_json, fetcher_bytes=lambda _: b""
+        )
+        self.assertGreaterEqual(previa["observacoes_atualizadas"], 1)
         self.assertIn(("1100015", "i06"), prov[0])
+        self.assertEqual(novos[4][novos[5]["1100015", "i06"][0]][5], 0)
         self.assertEqual(novos[4][novos[5]["1100015", "i09"][0]][4], "2026-01 / população2025")
         self.assertAlmostEqual(novos[4][novos[5]["1100015", "i09"][0]][5], 10000.0)
-        self.assertIn(date(2026, 1, 1), novos[7])
+        self.assertEqual(novos[7], {})
+        self.assertIsNone(novos[3]["1100015"][1])
 
     def test_paridade_com_edicao_publicada(self):
         self.assertEqual(checar_metodo(self.dados[1]), date(2025, 12, 1))
@@ -148,6 +186,12 @@ class PostgreSQLTest(unittest.TestCase):
             catalogo = client.get("/api/municipios?simulacao=1").get_json()
             self.assertEqual(len(catalogo["municipios"]), 5571)
             self.assertEqual(len(catalogo["municipios"][0]["historico"]), 12)
+            compacto = client.get(f"/api/municipios?simulacao=somente&edicao={edicao}").get_json()
+            antigo = catalogo["municipios"][0]
+            primeiro = compacto["municipios"][0]
+            self.assertEqual(primeiro["id"], antigo["id"])
+            self.assertEqual({mes: score for mes, score, *_ in primeiro["pontos"]}, antigo["historico"])
+            self.assertEqual({mes: eixos for mes, _, *eixos in primeiro["pontos"]}, antigo["historico_eixos"])
             detalhe = client.get("/api/municipios/5101837").get_json()
             self.assertIsNone(detalhe["municipio"]["score"])
             self.assertIsNone(detalhe["municipio"]["position"])
@@ -171,7 +215,7 @@ class PostgreSQLTest(unittest.TestCase):
             hash_anterior = detalhes[chave][0]
             hash_novo = digest(b"revisao teste")
             obs = observacoes[hash_anterior]
-            revisadas = {**observacoes, hash_novo: (*obs[:-2], obs[-2] + 1, obs[-1])}
+            revisadas = {**observacoes, hash_novo: (*obs[:4], "2021", obs[-2] + 1, obs[-1])}
             detalhes_novos = {**detalhes, chave: (hash_novo, *detalhes[chave][1:])}
             hash_revisao = {**hashes, "score_kredita.json": hash_novo}
             ranking_invalido = {
@@ -182,7 +226,16 @@ class PostgreSQLTest(unittest.TestCase):
                                  revisadas, detalhes_novos, periodo, historico))
             self.assertEqual(conn.execute("SELECT count(*) FROM lotes_importacao").fetchone()[0], 1)
             revisao = publicar(conn, (hash_revisao, pacote, municipios, ranking, revisadas,
-                                     detalhes_novos, periodo, historico))
+                                     detalhes_novos, periodo, historico),
+                               proveniencia=(set(), {"5101837"}, {}))
+            marcacoes = conn.execute(
+                """SELECT edicao_id, indicador, zero_i06_confirmado FROM score_indicadores
+                   WHERE edicao_id IN (%s, %s) AND codigo_ibge='5101837' AND indicador IN ('i05', 'i06')
+                   ORDER BY edicao_id, indicador""",
+                (edicao, revisao),
+            ).fetchall()
+            self.assertEqual(marcacoes, [(edicao, "i05", False), (edicao, "i06", False),
+                                        (revisao, "i05", False), (revisao, "i06", True)])
             valores = conn.execute(
                 """SELECT o.valor_bruto FROM score_indicadores si
                    JOIN observacoes o ON o.id = si.observacao_id
@@ -201,10 +254,38 @@ class PostgreSQLTest(unittest.TestCase):
                 self.assertEqual(detalhe["edicao"]["id"], edicao_id)
                 indicador = next(row for row in detalhe["indicadores"] if row["indicador"] == "i02")
                 self.assertEqual(indicador["valor_bruto"], esperado)
-                self.assertEqual(indicador["referencia"], obs[4])
+                self.assertEqual(indicador["referencia"], obs[4] if edicao_id == edicao else "2021")
             simulacao = series["simulacao_scr"][0]["edicao_id"]
             for invalida in (simulacao, "1e2", "9999999999999999999"):
                 self.assertEqual(client.get(f"/api/municipios/1100015?edicao={invalida}").status_code, 404)
+
+            def coletar(valor):
+                return {"referencias": {"i09": "2026-01"}, "i09": {"1100015": valor}}
+
+            self.assertRaises(ValueError, atualizar_via_apis, conn, dados, "2025-12")
+            with patch("importar_kredita.coletar_fontes_publicas", return_value={"referencias": {}}):
+                with self.assertRaisesRegex(ValueError, "observações válidas"):
+                    atualizar_via_apis(conn, dados, "2026-01")
+            with patch("importar_kredita.coletar_fontes_publicas", return_value=coletar(100)):
+                ligado, previa = executar_atualizacao(conn, dados, "2026-01", coletar(100), None)
+                self.assertEqual(previa["observacoes_atualizadas"], 1)
+                self.assertEqual(conn.execute("SELECT count(*) FROM lotes_importacao").fetchone()[0], 2)
+                executar_atualizacao(conn, dados, "2026-01", coletar(100), None,
+                                     gravar=True, esperada=(ligado[0], previa))
+                atual = conn.execute("SELECT max(id) FROM edicoes_score WHERE tipo='publicado'").fetchone()[0]
+                self.assertIsNotNone(atual)
+                repetido, repetida, _ = atualizar_via_apis(conn, dados, "2026-01")
+                self.assertIsNone(publicar(conn, repetido, proveniencia=repetida))
+            with patch("importar_kredita.coletar_fontes_publicas", return_value=coletar(101)):
+                corrigido, proveniencia, _ = atualizar_via_apis(conn, dados, "2026-01")
+                self.assertIsNotNone(publicar(conn, corrigido, proveniencia=proveniencia))
+            detalhe = client.get(f"/api/municipios/1100015?edicao={atual}").get_json()
+            reaproveitado = next(row for row in detalhe["indicadores"] if row["indicador"] == "i02")
+            self.assertEqual(reaproveitado["situacao"], "reaproveitado")
+            self.assertEqual(reaproveitado["referencia"], "2022")
+            final = client.get("/api/municipios/1100015/historico").get_json()
+            self.assertEqual(len(final["publicado"]), 4)
+            self.assertEqual(final["simulacao_scr"], series["simulacao_scr"])
 
     @staticmethod
     def remover_schema(base, schema):

@@ -7,7 +7,7 @@ COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt gunicorn==23.0.0 \
     && useradd --system --no-create-home kredita
 
-COPY backend/*.py backend/*.json ./
+COPY backend/app.py backend/importar_kredita.py backend/score_kredita.json ./
 COPY backend/migrations/ migrations/
 COPY frontend/ /app/frontend/
 

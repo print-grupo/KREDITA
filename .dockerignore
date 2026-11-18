@@ -1,8 +1,9 @@
 *
 !Dockerfile
 !backend/
-!backend/*.py
-!backend/*.json
+!backend/app.py
+!backend/importar_kredita.py
+!backend/score_kredita.json
 !backend/requirements.txt
 !backend/migrations/
 !backend/migrations/*.sql

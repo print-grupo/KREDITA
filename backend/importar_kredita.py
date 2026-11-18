@@ -146,7 +146,7 @@ def escolher(candidatos, indicador, mes):
     elegiveis = []
     for obs in candidatos:
         origem = mes_referencia(obs[4])
-        if origem is not None and origem < mes and (indicador not in MENSAIS or (
+        if obs[5] is not None and origem is not None and origem < mes and (indicador not in MENSAIS or (
             re.match(r"\d{4}-\d{2}", obs[4]) and mes - origem <= 3
         )):
             elegiveis.append((origem, obs))
@@ -207,10 +207,9 @@ def preparar(conn, dados, pasta):
     if periodo <= checar_metodo(pacote):
         raise ValueError("O reaproveitamento vale somente depois da edição de referência.")
     hashes, obs, detalhes = dict(hashes), dict(obs), dict(detalhes)
+    municipios = {codigo: dict(item) for codigo, item in municipios.items()}
     indicadores = {ind["id"]: ind for ind in pacote["indicadores"]}
     versao = pacote["base_version"]
-    mes = periodo.year * 12 + periodo.month
-
     caged = (pasta / "caged_i06_zeros.csv").read_bytes()
     hashes["caged_i06_zeros.csv"] = digest(caged)
     estados = {}
@@ -232,23 +231,52 @@ def preparar(conn, dados, pasta):
             h = chave_observacao(observacao)
             obs[h] = observacao
             registro[h] = unidade
+    novos, reaproveitados = recalcular_observacoes(
+        conn, pacote, municipios, obs, detalhes, periodo, estados, registro
+    )
+    hashes["calculo-local-v1"] = digest(json.dumps(
+        [(c, i, detalhes[c, i][0]) for c, i in sorted(reaproveitados)]
+    ).encode())
+    substituicoes = {f"{c}/{i}": obs[detalhes[c, i][0]][4] for c, i in sorted(reaproveitados)}
+    previa = {
+        "competencia": str(periodo), "observacoes_reaproveitadas": substituicoes,
+        "alteracoes": [{"codigo_ibge": c, "score_exportado": r[1], "score_local": novos[c][1],
+                        "posicao_exportada": r[9], "posicao_local": novos[c][9],
+                        "motivo_sem_score": novos[c][12]}
+                       for c, r in ranking.items() if not mesma_nota(r[1], novos[c][1]) or r[9:] != novos[c][9:]],
+    }
+    confirmado = {c for c, estado in estados.items() if estado == "confirmado"}
+    return (hashes, pacote, municipios, novos, obs, detalhes, periodo, historico), (
+        reaproveitados, confirmado, registro
+    ), previa
+
+
+def recalcular_observacoes(conn, pacote, municipios, obs, detalhes, periodo, estados, registro):
     candidatos = defaultdict(list)
+    versao = pacote["base_version"]
+    mes = periodo.year * 12 + periodo.month
 
     for *valores, unidade in conn.execute(
-        """SELECT DISTINCT o.indicador,o.municipio,o.uf,o.fonte,o.referencia,o.valor_bruto,o.situacao,si.unidade
+        """(SELECT DISTINCT ON (o.indicador,o.municipio,o.uf,o.fonte,o.referencia,si.unidade)
+                  o.indicador,o.municipio,o.uf,o.fonte,o.referencia,o.valor_bruto,o.situacao,si.unidade
            FROM score_indicadores si JOIN observacoes o ON o.id=si.observacao_id
            JOIN edicoes_score e ON e.id=si.edicao_id
            WHERE e.tipo='publicado' AND e.competencia < %s AND e.versao=%s AND o.situacao='observado'
            AND NOT si.reaproveitado
            AND (o.indicador <> 'i06' OR o.valor_bruto <> 0 OR si.zero_i06_confirmado)
+           ORDER BY o.indicador,o.municipio,o.uf,o.fonte,o.referencia,si.unidade,
+                    e.competencia DESC,e.id DESC)
            UNION
            SELECT o.indicador,o.municipio,o.uf,o.fonte,o.referencia,o.valor_bruto,o.situacao,h.unidade
            FROM observacoes_historicas h JOIN observacoes o ON o.id=h.observacao_id
-           WHERE h.versao=%s AND o.situacao='observado'""", (periodo, versao, versao)
+           WHERE h.versao=%s AND o.situacao='observado'
+           AND (o.indicador <> 'i06' OR o.valor_bruto <> 0)""", (periodo, versao, versao)
     ):
         candidatos[(*valores[:4], unidade)].append(tuple(valores))
     for h, unidade in registro.items():
         valores = obs[h]
+        if valores[0] == "i06" and valores[5] == 0:
+            continue
         candidatos[(*valores[:4], unidade)].append(valores)
 
     usados, reaproveitados = {}, set()
@@ -267,25 +295,13 @@ def preparar(conn, dados, pasta):
             obs[h] = atual
             detalhes[chave] = (h, *valores[1:])
         usados[chave] = atual[5]
+        if indicador == "i15" and atual[5] is not None:
+            municipios[codigo]["populacao"] = atual[5]
 
     novos, valores_nota = calcular(municipios, pacote, usados)
     for chave, (h, nome, unidade, _, _, _, peso) in detalhes.items():
         detalhes[chave] = (h, nome, unidade, *valores_nota[chave], peso)
-    hashes["calculo-local-v1"] = digest(json.dumps(
-        [(c, i, detalhes[c, i][0]) for c, i in sorted(reaproveitados)]
-    ).encode())
-    substituicoes = {f"{c}/{i}": obs[detalhes[c, i][0]][4] for c, i in sorted(reaproveitados)}
-    previa = {
-        "competencia": str(periodo), "observacoes_reaproveitadas": substituicoes,
-        "alteracoes": [{"codigo_ibge": c, "score_exportado": r[1], "score_local": novos[c][1],
-                        "posicao_exportada": r[9], "posicao_local": novos[c][9],
-                        "motivo_sem_score": novos[c][12]}
-                       for c, r in ranking.items() if not mesma_nota(r[1], novos[c][1]) or r[9:] != novos[c][9:]],
-    }
-    confirmado = {c for c, estado in estados.items() if estado == "confirmado"}
-    return (hashes, pacote, municipios, novos, obs, detalhes, periodo, historico), (
-        reaproveitados, confirmado, registro
-    ), previa
+    return novos, reaproveitados
 
 
 def preparar_banco(conn):
@@ -440,7 +456,7 @@ def coletar_fontes_publicas(mes_alvo, municipios, fetcher_json=buscar_json_api, 
             cod, ano_ref, val = str(row.get("D1C", "")), str(row.get("D3C", "")), row.get("V")
             if re.fullmatch(r"\d{7}", cod) and re.fullmatch(r"\d{4}", ano_ref) and val not in (None, "...", "-", ""):
                 por_mun[cod][int(ano_ref)] = float(val)
-        anos_disp = sorted({a for m in por_mun.values() for a in m})
+        anos_disp = sorted({a for m in por_mun.values() for a in m if a <= int(ano)})
         if len(anos_disp) >= 2:
             a_ant, a_atual = anos_disp[-2], anos_disp[-1]
             pop_atual = {c: m[a_atual] for c, m in por_mun.items() if a_atual in m}
@@ -519,8 +535,10 @@ def coletar_fontes_publicas(mes_alvo, municipios, fetcher_json=buscar_json_api, 
         docs = cad_data.get("response", {}).get("docs", cad_data.get("value", []))
         i10 = {}
         for r in docs:
-            cod = str(r.get("ibge") or r.get("codigo_ibge") or "").zfill(7)
-            qtd = r.get("qtd_pessoas_cadunico") or r.get("pessoas")
+            cod = str(r.get("ibge") or r.get("codigo_ibge") or "")
+            qtd = r.get("qtd_pessoas_cadunico")
+            if qtd is None:
+                qtd = r.get("pessoas")
             if len(cod) == 6:
                 cod = next((c for c in municipios if c.startswith(cod)), cod)
             if cod in pop_mun and pop_mun[cod] and qtd is not None:
@@ -599,66 +617,73 @@ def coletar_fontes_publicas(mes_alvo, municipios, fetcher_json=buscar_json_api, 
     return coletados
 
 
-def atualizar_via_apis(dados, mes_alvo, fetcher=buscar_json_api, fetcher_bytes=buscar_bytes_api):
-    hashes, pacote, municipios, _, observacoes, detalhes, _, historico = dados
+def atualizar_via_apis(conn, dados, mes_alvo, fetcher=buscar_json_api, fetcher_bytes=buscar_bytes_api,
+                       *, coletados=None):
+    _, pacote, municipios, ranking, observacoes, detalhes, _, _ = dados
     if not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", mes_alvo):
         raise ValueError("Use --competencia no formato AAAA-MM.")
     periodo = competencia(mes_alvo.replace("-", ""))
-    coletados = coletar_fontes_publicas(mes_alvo, municipios, fetcher_json=fetcher, fetcher_bytes=fetcher_bytes)
-    if not coletados["fontes_ativas"]:
-        raise ValueError(f"Nenhuma API pública retornou dados novos para {mes_alvo}.")
-
-    pacote = json.loads(json.dumps(pacote))
-    municipios = json.loads(json.dumps(municipios))
-    observacoes = dict(observacoes)
+    if periodo <= checar_metodo(pacote):
+        raise ValueError("A atualização vale somente depois da edição de referência.")
+    if coletados is None:
+        coletados = coletar_fontes_publicas(mes_alvo, municipios, fetcher_json=fetcher, fetcher_bytes=fetcher_bytes)
+    municipios = {codigo: dict(item) for codigo, item in municipios.items()}
     detalhes = dict(detalhes)
-    hashes = dict(hashes)
-    historico = dict(historico)
-
-    if "i15" in coletados:
-        for cod, pop_nova in coletados["i15"].items():
-            if cod in municipios:
-                municipios[cod]["populacao"] = pop_nova
-
-    indicadores = {ind["id"]: ind for ind in pacote["indicadores"]}
-    usados = {}
-    reaproveitados = set()
+    observacoes_novas = {}
     atualizados = 0
+    tem_observacao_nova = False
+    mes = periodo.year * 12 + periodo.month
 
-    for (codigo, ind), (h, nome, unidade, *_) in list(detalhes.items()):
-        obs = observacoes[h]
-        valor = obs[5]
-        meta = indicadores[ind]
-        estadual = meta["origin"] == "UF"
-        chave_busca = municipios[codigo]["uf"] if estadual else codigo
-        mapa_novo = coletados.get(ind)
-        if mapa_novo and chave_busca in mapa_novo:
-            valor = mapa_novo[chave_busca]
-            ref_nova = coletados["referencias"][ind]
-            nova_obs = (ind, None if estadual else codigo, municipios[codigo]["uf"] if estadual else None,
-                        meta["fonte"].strip(), ref_nova, valor, "observado")
-            h = chave_observacao(nova_obs)
-            observacoes[h] = nova_obs
+    for (codigo, ind), (hash_base, *metadados) in detalhes.items():
+        base = observacoes[hash_base]
+        chave_busca = base[2] or codigo
+        referencia = coletados["referencias"].get(ind, "")
+        origem = mes_referencia(referencia)
+        try:
+            valor = numero(coletados.get(ind, {}).get(chave_busca))
+        except (ValueError, TypeError):
+            valor = None
+        if (valor is None or origem is None or origem > mes
+                or (ind in MENSAIS and (origem != mes or not referencia.startswith(mes_alvo)))
+                or (ind == "i06" and valor == 0)
+                or (ind == "i15" and valor <= 0)):
+            observacao = (*base[:4], mes_alvo, None, "ausente")
+        else:
+            observacao = (*base[:4], referencia, valor, "observado")
             atualizados += 1
-        elif ind in MENSAIS and not obs[4].startswith(mes_alvo):
-            reaproveitados.add((codigo, ind))
-        detalhes[codigo, ind] = (h, nome, unidade, *detalhes[codigo, ind][3:])
-        usados[codigo, ind] = valor
+            tem_observacao_nova |= observacao != base
+        h = chave_observacao(observacao)
+        observacoes_novas[h] = observacao
+        detalhes[codigo, ind] = (h, *metadados)
+    if not tem_observacao_nova:
+        raise ValueError(f"Nenhuma API pública retornou observações válidas para {mes_alvo}.")
 
-    novos, auditoria = calcular(municipios, pacote, usados)
-    for chave, (h, nome, unidade, _, _, _, peso) in list(detalhes.items()):
-        detalhes[chave] = (h, nome, unidade, *auditoria[chave], peso)
-
-    if all(k in coletados for k in ("i01", "i03", "i11")) or periodo not in historico:
-        historico[periodo] = {
-            c: (novos[c][0], novos[c][1], *novos[c][3:7]) for c in municipios
-        }
-
-    hashes["atualizacao-api"] = digest(
-        json.dumps([mes_alvo, sorted(coletados["fontes_ativas"]), atualizados]).encode("utf-8")
+    novos, reaproveitados = recalcular_observacoes(
+        conn, pacote, municipios, observacoes_novas, detalhes, periodo, {}, {}
     )
-    proveniencia = (reaproveitados, set(), {})
-    return (hashes, pacote, municipios, novos, observacoes, detalhes, periodo, historico), atualizados, proveniencia
+    anterior = dict(conn.execute(
+        """SELECT codigo_ibge, score FROM scores_municipais WHERE edicao_id=(
+               SELECT id FROM edicoes_score WHERE tipo='publicado'
+               ORDER BY competencia DESC, id DESC LIMIT 1)"""
+    ))
+    if not anterior:
+        anterior = {codigo: valores[1] for codigo, valores in ranking.items()}
+    previa = {
+        "competencia": mes_alvo,
+        "observacoes_atualizadas": atualizados,
+        "observacoes_reaproveitadas": len(reaproveitados),
+        "municipios_ganharam_score": sum(anterior.get(c) is None and r[1] is not None for c, r in novos.items()),
+        "municipios_perderam_score": sum(anterior.get(c) is not None and r[1] is None for c, r in novos.items()),
+    }
+    conteudo = [mes_alvo, pacote["base_version"], pacote["configuracao"],
+                sorted(pacote["pesos_M"].items()),
+                [(c, i, detalhes[c, i][0], (c, i) in reaproveitados) for c, i in sorted(detalhes)],
+                [(c, novos[c][0]) for c in sorted(novos)]]
+    hashes = {"atualizacao-api-v2": digest(json.dumps(conteudo, sort_keys=True).encode("utf-8"))}
+    observacoes_usadas = {h: observacoes_novas[h] for h, *_ in detalhes.values()}
+    return (hashes, pacote, municipios, novos, observacoes_usadas, detalhes, periodo, {}), (
+        reaproveitados, set(), {}
+    ), previa
 
 
 def publicar(conn, dados, calculado_em=None, proveniencia=None):
@@ -711,26 +736,17 @@ def publicar(conn, dados, calculado_em=None, proveniencia=None):
                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
             ((edicao, codigo, *valores) for codigo, valores in ranking.items()),
         )
+        reaproveitados, confirmados, registro = proveniencia if proveniencia is not None else (set(), set(), {})
         cur.executemany(
             """INSERT INTO score_indicadores
                (edicao_id, codigo_ibge, indicador, observacao_id, nome, unidade,
-                valor_usado, nota, nota_sem_cofator, peso)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
-            ((edicao, codigo, indicador, ids[h], *valores)
+                valor_usado, nota, nota_sem_cofator, peso, reaproveitado, zero_i06_confirmado)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+            ((edicao, codigo, indicador, ids[h], *valores,
+              (codigo, indicador) in reaproveitados, indicador == "i06" and codigo in confirmados)
              for (codigo, indicador), (h, *valores) in detalhes.items()),
         )
-        if proveniencia is not None:
-            reaproveitados, confirmados, registro = proveniencia
-            cur.executemany(
-                """UPDATE score_indicadores SET reaproveitado=true
-                   WHERE edicao_id=%s AND codigo_ibge=%s AND indicador=%s""",
-                ((edicao, codigo, indicador) for codigo, indicador in sorted(reaproveitados)),
-            )
-            cur.execute(
-                """UPDATE score_indicadores SET zero_i06_confirmado=true
-                   WHERE edicao_id=%s AND indicador='i06' AND codigo_ibge=ANY(%s)""",
-                (edicao, sorted(confirmados)),
-            )
+        if registro:
             cur.executemany(
                 "INSERT INTO observacoes_historicas VALUES (%s,%s,%s) ON CONFLICT DO NOTHING",
                 ((ids[h], pacote["base_version"], unidade) for h, unidade in registro.items()),
@@ -746,6 +762,52 @@ def publicar(conn, dados, calculado_em=None, proveniencia=None):
     return edicao
 
 
+def coletar_atualizacao(dados, mes):
+    if not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", mes):
+        raise ValueError("Informe a competência no formato AAAA-MM.")
+    return coletar_fontes_publicas(mes, dados[2])
+
+
+def executar_atualizacao(conn, dados, mes, coletados, calculado_em, *,
+                         gravar=False, esperada=None, mostrar_json=False):
+    with conn.transaction():
+        if gravar:
+            conn.execute("SELECT pg_advisory_xact_lock(2631090)")
+        else:
+            conn.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY")
+        lote, proveniencia, previa = atualizar_via_apis(conn, dados, mes, coletados=coletados)
+        if esperada is not None and (lote[0], previa) != esperada:
+            raise ValueError("A base mudou desde a prévia. Execute a atualização guiada novamente.")
+        if mostrar_json:
+            print(json.dumps(previa, ensure_ascii=False), flush=True)
+        if gravar:
+            edicao = publicar(conn, lote, calculado_em, proveniencia)
+    if gravar:
+        print(f"Edição publicada: {edicao}" if edicao is not None else "Lote já publicado.")
+    return lote, previa
+
+
+def atualizacao_guiada(conn, dados, mes, calculado_em):
+    print(f"Consultando as fontes para {mes}…", flush=True)
+    coletados = coletar_atualizacao(dados, mes)
+    lote, previa = executar_atualizacao(conn, dados, mes, coletados, calculado_em)
+    print(f"Competência: {previa['competencia']}")
+    print(f"Observações atualizadas: {previa['observacoes_atualizadas']}")
+    print(f"Observações reaproveitadas: {previa['observacoes_reaproveitadas']}")
+    print(f"Municípios que ganham score: {previa['municipios_ganharam_score']}")
+    print(f"Municípios que perdem score: {previa['municipios_perderam_score']}")
+    print(f"Municípios com score na prévia: {sum(row[1] is not None for row in lote[3].values())}/{len(lote[3])}")
+    try:
+        confirmacao = input(f"Digite PUBLICAR para confirmar a edição {mes}: ").strip()
+    except EOFError:
+        confirmacao = ""
+    if confirmacao != "PUBLICAR":
+        print("Atualização cancelada.")
+        return
+    executar_atualizacao(conn, dados, mes, coletados, calculado_em,
+                         gravar=True, esperada=(lote[0], previa))
+
+
 def main():
     parser = argparse.ArgumentParser(description="Gerencia migrações, importação, cálculo e atualização do KREDITA.")
     parser.add_argument("pasta", nargs="?", default=ROOT, type=Path, help="Pasta com score_kredita.json")
@@ -753,10 +815,22 @@ def main():
     modo.add_argument("--validar", action="store_true", help="Valida os arquivos sem publicar")
     modo.add_argument("--prever-recalculo", action="store_true", help="Gera a prévia local sem publicar")
     modo.add_argument("--publicar-recalculado", action="store_true", help="Recalcula e publica uma nova edição")
-    modo.add_argument("--atualizar-apis", action="store_true", help="Consulta APIs públicas (BCB/IBGE/MDS) e publica")
-    parser.add_argument("--competencia", help="Competência alvo AAAA-MM para --atualizar-apis")
+    modo.add_argument("--atualizar-apis", action="store_true", help="Gera prévia com dados das APIs públicas")
+    modo.add_argument("--guiado", action="store_true", help="Consulta, mostra a prévia e solicita confirmação")
+    parser.add_argument("--publicar", action="store_true", help="Publica a atualização de --atualizar-apis")
+    parser.add_argument("--competencia", help="Competência alvo AAAA-MM para atualização via APIs")
     parser.add_argument("--calculado-em", help="Data e hora de cálculo em ISO 8601, com fuso")
     args = parser.parse_args()
+    if args.publicar and not args.atualizar_apis:
+        parser.error("--publicar exige --atualizar-apis.")
+    if args.atualizar_apis and not args.competencia:
+        parser.error("Informe --competencia AAAA-MM junto com --atualizar-apis.")
+    if args.guiado and not args.competencia:
+        try:
+            args.competencia = input("Qual é a competência da atualização (AAAA-MM)? ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print("\nAtualização cancelada.")
+            return
     if args.calculado_em:
         calculado_em = datetime.fromisoformat(args.calculado_em)
         if calculado_em.tzinfo is None:
@@ -775,14 +849,23 @@ def main():
         parser.error("Configure DATABASE_URL.")
 
     with psycopg.connect(url) as conn:
-        preparar_banco(conn)
-        if args.atualizar_apis:
-            if not args.competencia:
-                parser.error("Informe --competencia AAAA-MM junto com --atualizar-apis.")
-            dados, atualizados, proveniencia = atualizar_via_apis(dados, args.competencia)
-            edicao = publicar(conn, dados, calculado_em, proveniencia)
-            print(f"{atualizados} observações atualizadas via APIs públicas. Edição: {edicao or 'já publicada'}.")
+        if args.guiado:
+            try:
+                atualizacao_guiada(conn, dados, args.competencia, calculado_em)
+            except ValueError as erro:
+                parser.exit(1, f"Atualização interrompida: {erro}\n")
+            except KeyboardInterrupt:
+                print("\nAtualização cancelada.")
             return
+        if args.atualizar_apis:
+            try:
+                coletados = coletar_atualizacao(dados, args.competencia)
+                executar_atualizacao(conn, dados, args.competencia, coletados, calculado_em,
+                                     gravar=args.publicar, mostrar_json=True)
+            except ValueError as erro:
+                parser.exit(1, f"Atualização interrompida: {erro}\n")
+            return
+        preparar_banco(conn)
         if args.prever_recalculo or args.publicar_recalculado:
             if args.publicar_recalculado:
                 conn.execute("SELECT pg_advisory_xact_lock(2631090)")

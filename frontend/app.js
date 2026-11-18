@@ -263,6 +263,8 @@ const defaultId = new URLSearchParams(location.search).get('id');
 let selectedId = page === 'index' ? defaultId : null;
 let municipalities = new Map();
 let catalog = new Map();
+let dashboardHistory = null;
+let dashboardHistoryStatus = 'loading';
 let scores = [];
 let edition;
 let rankingPage = 1;
@@ -680,7 +682,7 @@ function renderDashboardCharts(items) {
   const place = catalog.get(selectedId);
   if (selectedId) {
     panel.innerHTML = municipality
-      ? charts(municipality, identity(municipality))
+      ? charts({ ...municipality, ...dashboardHistory?.get(selectedId) }, identity(municipality))
       : `<section class="panel chart-panel"><h2>Gráficos de ${place ? identity(place) : 'município selecionado'}</h2>
         <p class="empty-result">Score indisponível.</p></section>`;
     return;
@@ -691,7 +693,7 @@ function renderDashboardCharts(items) {
   }
   const monthly = new Map();
   for (const item of items) {
-    for (const [date, score] of Object.entries(scopedHistory(item))) {
+    for (const [date, score] of Object.entries(scopedHistory(dashboardHistory?.get(item.id) ?? {}))) {
       if (score === null) continue;
       const month = monthly.get(date) || { sum: 0, count: 0 };
       month.sum += score;
@@ -707,7 +709,8 @@ function renderDashboardCharts(items) {
     <section class="panel chart-panel"><h2>Média por eixo</h2><p class="subtitle chart-context">Municípios do recorte</p>${axisChart(average)}</section>
     <section class="panel chart-panel"><h2>${edition?.demonstracao ? 'Histórico do score médio' : 'Simulação SCR do score médio'}</h2>
       <p class="subtitle chart-context">Média dos municípios do recorte com dados nos eixos ativos em cada mês.</p>
-      ${historyChart(monthlyHistoryPoints(average.historico), { monthly: true, empty: 'Histórico indisponível no recorte.' })}</section>`;
+      ${dashboardHistoryStatus === 'loading' ? '<p>Carregando histórico…</p>' :
+        historyChart(monthlyHistoryPoints(average.historico), { monthly: true, empty: 'Histórico indisponível no recorte.' })}</section>`;
 }
 
 function municipalitiesInState() {
@@ -1174,7 +1177,8 @@ function charts(item, context = '', history = null, scale = null) {
     <section class="panel chart-panel"><h2>Histórico do score</h2>${caption}${editions}<div class="history-series">
     ${edition?.demonstracao ? '' : `<h3>Simulação histórica com variação do SCR</h3>
       <p class="subtitle">Variam I01, I03 e I11. As demais fontes mantêm a referência da edição.</p>`}
-    ${history !== null || item.historico ? historyChart(simulationPoints(item, history), { monthly: true, scale }) : '<p>Carregando histórico…</p>'}
+    ${history !== null || item.historico || (page === 'index' && dashboardHistoryStatus !== 'loading')
+      ? historyChart(simulationPoints(item, history), { monthly: true, scale }) : '<p>Carregando histórico…</p>'}
     </div>
     </section>`;
 }
@@ -1606,23 +1610,43 @@ async function readJson(path) {
   return response.json();
 }
 
-const catalogCacheKey = 'kredita-catalogo-sessao';
+const catalogCacheKey = 'kredita-catalogo-sessao-v2';
 
 async function loadCatalog(manual) {
-  const needsSim = page === 'index';
   if (!manual) {
     try {
       const cached = JSON.parse(sessionStorage.getItem(catalogCacheKey));
-      if (cached?.edicao && Array.isArray(cached.municipios) && (!needsSim || cached.simulacao)) {
+      if (cached?.edicao && Array.isArray(cached.municipios)) {
         return cached;
       }
     } catch {}
   }
-  const data = await readJson('/api/municipios' + (needsSim ? '?simulacao=1' : ''));
+  const data = await readJson('/api/municipios');
   try {
-    sessionStorage.setItem(catalogCacheKey, JSON.stringify({ ...data, simulacao: needsSim }));
+    sessionStorage.setItem(catalogCacheKey, JSON.stringify(data));
   } catch {}
   return data;
+}
+
+let historyRequest;
+
+async function loadDashboardHistory() {
+  const request = Symbol();
+  historyRequest = request;
+  const editionId = edition.id;
+  try {
+    const data = await readJson('/api/municipios?simulacao=somente&edicao=' + editionId);
+    if (historyRequest !== request) return;
+    dashboardHistory = new Map(data.municipios.map(({ id, pontos }) => [id, {
+      historico: Object.fromEntries(pontos.map(([mes, score]) => [mes, score])),
+      historico_eixos: Object.fromEntries(pontos.map(([mes, , ...eixos]) => [mes, eixos]))
+    }]));
+    dashboardHistoryStatus = 'ready';
+  } catch {
+    if (historyRequest !== request) return;
+    dashboardHistoryStatus = 'unavailable';
+  }
+  renderDashboardCharts(dashboardScope().items);
 }
 
 async function reload(manual = false) {
@@ -1634,6 +1658,8 @@ async function reload(manual = false) {
   updateAxisControls();
   historyCache.clear();
   if (page === 'index') {
+    dashboardHistory = null;
+    dashboardHistoryStatus = 'loading';
     loadBets().catch(() => {});
     const uf = catalog.get(selectedId)?.uf || $('#dashboard-uf').value;
     const states = [...new Set([...catalog.values()].map(item => item.uf))].sort();
@@ -1644,6 +1670,7 @@ async function reload(manual = false) {
     overviewPicker.render();
     updateSelection();
     renderDashboard();
+    loadDashboardHistory();
   }
   if (page === 'ranking') {
     const uf = sharedRankingUF ?? $('#uf').value;

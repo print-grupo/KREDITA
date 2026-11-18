@@ -30,10 +30,23 @@ Abra [o painel Docker](http://127.0.0.1:8788/site/).
 
 ## Atualizar dados via APIs públicas ou novas edições
 
-Para atualizar os dados mensais consultando diretamente a API aberta do Banco Central (Olinda Pix) e recalculando os scores localmente:
+Com o banco inicializado, abra a atualização guiada. Informe a competência, confira a prévia e digite `PUBLICAR` para confirmar. Enter cancela. As fontes são consultadas uma vez por execução.
+
+```powershell
+python importar_kredita.py --guiado
+```
+
+Se o painel roda em Docker e o serviço web está ativo, use a conexão já configurada no contêiner.
+
+```powershell
+docker exec -it kredita-revisao-web-1 python importar_kredita.py --guiado
+```
+
+Para rotinas chamadas por scripts, os comandos separados continuam disponíveis.
 
 ```powershell
 python importar_kredita.py --atualizar-apis --competencia 2026-01
+python importar_kredita.py --atualizar-apis --competencia 2026-01 --publicar
 ```
 
 Para publicar uma nova pasta exportada do Colab com reaproveitamento de até 3 competências anteriores e checagem de zeros do CAGED (`caged_i06_zeros.csv`):
@@ -47,6 +60,7 @@ python importar_kredita.py caminho-da-nova-edicao --publicar-recalculado
 
 - `GET /api/ranking?pagina=1&limite=50&uf=SP&busca=` retorna o ranking paginado.
 - `GET /api/municipios` retorna o catálogo e o resumo da edição atual (`?simulacao=1` inclui a série mensal SCR).
+- `GET /api/municipios?simulacao=somente&edicao=<id>` retorna as séries SCR para o dashboard em pontos `[competência, score, E1, E2, E3, E4]`.
 - `GET /api/municipios/1100015` retorna o score e a auditoria dos indicadores (`?edicao=1` consulta uma edição publicada específica).
 - `GET /api/municipios/1100015/historico` retorna as edições publicadas e a simulação SCR em séries distintas.
 - `GET /api/apostas` retorna o estudo territorial mais recente e suas estimativas por abrangência.

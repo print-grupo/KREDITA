@@ -16,6 +16,12 @@ RESUMO = """m.codigo_ibge AS id, m.nome, m.uf, m.regiao, s.populacao, s.score,
            ARRAY[s.e1, s.e2, s.e3, s.e4] AS eixos, s.pos_brasil AS position"""
 JUNCAO = """FROM municipios m JOIN scores_municipais s USING (codigo_ibge)
            WHERE s.edicao_id = %s"""
+LOTE_SCR = """SELECT publicado.lote_id FROM edicoes_score publicado
+              WHERE publicado.tipo = 'publicado' AND EXISTS (
+                  SELECT 1 FROM edicoes_score simulacao
+                  WHERE simulacao.tipo = 'simulacao_scr' AND simulacao.lote_id = publicado.lote_id
+              )
+              ORDER BY publicado.competencia DESC, publicado.id DESC LIMIT 1"""
 
 
 def conexao():
@@ -51,6 +57,15 @@ def codigo_valido(codigo):
         abort(404, description="Município não encontrado.")
 
 
+def parametro_edicao():
+    valor = request.args.get("edicao")
+    if valor is None:
+        return None
+    if not re.fullmatch(r"[1-9][0-9]{0,18}", valor) or int(valor) > 2**63 - 1:
+        abort(404, description="Edição publicada não encontrada.")
+    return int(valor)
+
+
 @site.app_errorhandler(404)
 @site.app_errorhandler(503)
 def erro_api(error):
@@ -70,22 +85,31 @@ def arquivos_site(name="index.html"):
 @site.get("/api/municipios")
 def catalogo():
     with conexao() as conn:
-        edicao = consulta_edicao(conn)
+        historico_apenas = request.args.get("simulacao") == "somente"
+        edicao_id = parametro_edicao() if historico_apenas else None
+        edicao = consulta_edicao(conn, edicao_id)
         items = conn.execute(
-            f"SELECT {RESUMO} {JUNCAO} ORDER BY m.nome, m.codigo_ibge", (edicao["id"],)
+            f"SELECT {'m.codigo_ibge AS id' if historico_apenas else RESUMO} {JUNCAO} ORDER BY m.nome, m.codigo_ibge",
+            (edicao["id"],),
         ).fetchall()
-        if request.args.get("simulacao") == "1":
+        if historico_apenas or request.args.get("simulacao") == "1":
             por_codigo = {item["id"]: {} for item in items}
             eixos_por_codigo = {item["id"]: {} for item in items}
             for row in conn.execute(
-                """SELECT s.codigo_ibge, to_char(e.competencia, 'YYYY-MM') AS mes, s.score,
+                f"""SELECT s.codigo_ibge, to_char(e.competencia, 'YYYY-MM') AS mes, s.score,
                           ARRAY[s.e1, s.e2, s.e3, s.e4] AS eixos
                    FROM edicoes_score e JOIN scores_municipais s ON s.edicao_id = e.id
-                   WHERE e.tipo = 'simulacao_scr' AND e.lote_id = %s""",
-                (edicao["lote_id"],),
+                   WHERE e.tipo = 'simulacao_scr' AND e.lote_id = ({LOTE_SCR})""",
             ):
                 por_codigo[row["codigo_ibge"]][row["mes"]] = row["score"]
                 eixos_por_codigo[row["codigo_ibge"]][row["mes"]] = row["eixos"]
+            if historico_apenas:
+                return jsonify(edicao=edicao, municipios=[
+                    {"id": item["id"], "pontos": [
+                        [mes, score, *eixos_por_codigo[item["id"]][mes]]
+                        for mes, score in por_codigo[item["id"]].items()
+                    ]} for item in items
+                ])
             for item in items:
                 item["historico"] = por_codigo[item["id"]]
                 item["historico_eixos"] = eixos_por_codigo[item["id"]]
@@ -141,11 +165,7 @@ def ranking_api():
 @site.get("/api/municipios/<codigo>")
 def detalhe_api(codigo):
     codigo_valido(codigo)
-    edicao_id = request.args.get("edicao")
-    if edicao_id is not None:
-        if not re.fullmatch(r"[1-9][0-9]{0,18}", edicao_id) or int(edicao_id) > 2**63 - 1:
-            abort(404, description="Edição publicada não encontrada.")
-        edicao_id = int(edicao_id)
+    edicao_id = parametro_edicao()
     with conexao() as conn:
         edicao = consulta_edicao(conn, edicao_id)
         item = conn.execute(
@@ -175,14 +195,12 @@ def historico_api(codigo):
         if conn.execute("SELECT 1 FROM municipios WHERE codigo_ibge = %s", (codigo,)).fetchone() is None:
             abort(404, description="Município não encontrado.")
         rows = conn.execute(
-            """SELECT e.id AS edicao_id, e.tipo, to_char(e.competencia, 'YYYY-MM') AS competencia,
+            f"""SELECT e.id AS edicao_id, e.tipo, to_char(e.competencia, 'YYYY-MM') AS competencia,
                       e.versao, e.publicado_em::text, s.score,
                       ARRAY[s.e1, s.e2, s.e3, s.e4] AS eixos
                FROM edicoes_score e LEFT JOIN scores_municipais s
                     ON s.edicao_id = e.id AND s.codigo_ibge = %s
-               WHERE e.tipo = 'publicado' OR e.lote_id = (
-                   SELECT lote_id FROM edicoes_score WHERE tipo = 'publicado'
-                   ORDER BY competencia DESC, id DESC LIMIT 1)
+               WHERE e.tipo = 'publicado' OR e.lote_id = ({LOTE_SCR})
                ORDER BY e.competencia, e.id""",
             (codigo,),
         ).fetchall()
