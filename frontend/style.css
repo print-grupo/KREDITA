@@ -390,7 +390,6 @@ dialog::backdrop { background: #142a3780; }
 [data-ponto]:focus { stroke: currentColor; stroke-width: 3; }
 #comparacao-busca { width: min(92vw, 500px); border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
 @media (max-width: 900px) {
-  body.menu-aberto .sidebar { transform: translateX(0); }
   .topbar-actions { flex-wrap: wrap; justify-content: end; }
 }
 

@@ -167,6 +167,20 @@ document.addEventListener('submit', async evento => {
   }
 });
 
+const menuMobile = matchMedia('(max-width: 760px)');
+let menuAberto = !menuMobile.matches;
+function ajustarMenu(abrir) {
+  menuAberto = abrir;
+  document.querySelector('.app-shell')?.classList.toggle('sidebar-collapsed', !abrir);
+  document.querySelector('.hamburger')?.setAttribute('aria-expanded', String(abrir));
+  const sidebar = document.querySelector('#sidebar');
+  if (sidebar) sidebar.inert = !abrir;
+  const sombra = document.querySelector('.menu-shade');
+  if (sombra) sombra.hidden = !abrir || !menuMobile.matches;
+}
+ajustarMenu(menuAberto);
+menuMobile.addEventListener('change', evento => ajustarMenu(!evento.matches));
+
 document.addEventListener('click', async evento => {
   for (const aberto of document.querySelectorAll('details.axis-scope[open], details.ranking-triage[open], details.dashboard-extra-filters[open]')) {
     if (!aberto.contains(evento.target)) aberto.open = false;
@@ -175,8 +189,14 @@ document.addEventListener('click', async evento => {
   if (!alvo) return;
   const dados = alvo.dataset;
   if ('menu' in dados) {
-    const abrir = document.body.classList.toggle('menu-aberto');
-    alvo.setAttribute('aria-expanded', String(abrir));
+    ajustarMenu(alvo.classList.contains('menu-shade') ? false : !menuAberto);
+  }
+  if ('eixosTodos' in dados) {
+    const form = alvo.closest('form');
+    if (form) {
+      for (const box of form.querySelectorAll('input[name="eixos"]')) box.checked = true;
+      form.requestSubmit();
+    }
   }
   if (alvo.matches('a[data-parcial], a[data-pagina], a[data-municipio], a[data-exportar]') &&
       (evento.button || evento.ctrlKey || evento.metaKey || evento.shiftKey || evento.altKey)) return;
@@ -285,6 +305,10 @@ document.addEventListener('change', evento => {
   }
 });
 document.addEventListener('keydown', evento => {
+  if (evento.key === 'Escape' && menuMobile.matches && menuAberto && !document.querySelector('#comparacao-busca')?.open) {
+    ajustarMenu(false);
+    document.querySelector('.hamburger')?.focus();
+  }
   if (evento.target.matches('[data-ponto]') && ['Enter', ' '].includes(evento.key)) {
     evento.preventDefault();
     evento.target.dispatchEvent(new MouseEvent('click', { bubbles: true }));
