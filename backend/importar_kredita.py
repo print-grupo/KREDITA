@@ -340,7 +340,7 @@ def importar_apostas(conn, data=None):
     if len(rows) != 28 or {row["uf"] for row in rows} != UFS | {"BR"}:
         raise ValueError("A tabela precisa conter Brasil e as 27 UFs, sem duplicatas.")
     with conn.transaction():
-        conn.execute((ROOT / "migrations/001_postgresql.sql").read_text(encoding="utf-8"))
+        conn.execute((ROOT / "migrations/001_sqlite.sql").read_text(encoding="utf-8"))
         conn.execute(
             """INSERT INTO estudos_apostas (id, estudo, inicio, fim, metrica, unidade, fonte)
                VALUES (:id, :estudo, :inicio, :fim, :metrica, :unidade, :fonte)

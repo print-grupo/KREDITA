@@ -149,7 +149,7 @@ class ExportacaoEReaproveitamentoTest(unittest.TestCase):
         self.assertIsNone(novos[3][ids[2]][1])
 
 
-class PostgreSQLTest(unittest.TestCase):
+class SQLiteTest(unittest.TestCase):
     def test_publicacao_e_api(self):
         import contextlib
         import sqlite3
@@ -166,7 +166,7 @@ class PostgreSQLTest(unittest.TestCase):
         client = app.test_client()
         dados = ler_exportacao(ROOT)
         with contextlib.closing(conectar_sqlite(url)) as conn:
-            conn.execute((ROOT / "migrations/001_postgresql.sql").read_text(encoding="utf8"))
+            conn.execute((ROOT / "migrations/001_sqlite.sql").read_text(encoding="utf8"))
             conn.execute("INSERT INTO municipios VALUES ('0000001', 'Teste', 'SP', 'Sudeste')")
             preparar_banco(conn)
             preparar_banco(conn)
