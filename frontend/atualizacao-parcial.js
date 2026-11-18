@@ -76,9 +76,16 @@ function sincronizar() {
   for (const botao of document.querySelectorAll('[data-favorite]')) {
     const salvo = salvos.includes(botao.dataset.favorite);
     botao.setAttribute('aria-pressed', String(salvo));
-    botao.textContent = salvo ? '★' : '☆';
+    const estrela = botao.querySelector('[data-estrela]');
+    if (estrela) {
+      estrela.textContent = salvo ? '★' : '☆';
+      botao.querySelector('.acao-legenda').textContent = salvo ? 'Salvo' : 'Favoritar';
+    } else {
+      botao.textContent = salvo ? '★' : '☆';
+    }
   }
-  document.querySelector('[data-count]').textContent = lista('comparar').length;
+  const contador = document.querySelector('[data-count]');
+  if (contador) contador.textContent = lista('comparar').length;
   const info = document.querySelector('#dados-mapa');
   if (!mapa || !info) return;
   const dados = JSON.parse(info.textContent);

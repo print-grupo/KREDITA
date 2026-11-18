@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% from '_componentes.html' import cabecalho, acoes, seletor_eixos, perfil, curva %}
 {% block conteudo %}
-{{ cabecalho('Panorama territorial', 'Explore os municípios por estado, porte populacional e eixo de análise.') }}
+{{ cabecalho('Visão geral') }}
 <section class="panel" aria-label="Busca e filtros do dashboard">
   <form data-parcial data-auto-submit method="get" class="dashboard-filters" style="margin-bottom:0;border:0;box-shadow:none">
     <label class="input-label">Buscar município
@@ -64,7 +64,6 @@
   <article class="metric-card dashboard-metric primary-metric">
     <div class="metric-top">
       <span>{{ 'Score médio do recorte' if ativos|length == 4 else 'Score médio dos eixos selecionados' }}</span>
-      <span class="metric-icon" aria-hidden="true">↗</span>
     </div>
     <div class="metric-value">{{ numero(media) }}{% if media is not none %} <small>/ 100</small>{% endif %}</div>
     <div class="metric-note">Pontuação média</div>
@@ -72,7 +71,6 @@
   <article class="metric-card dashboard-metric">
     <div class="metric-top">
       <span>Municípios no recorte</span>
-      <span class="metric-icon" aria-hidden="true">⌖</span>
     </div>
     <div class="metric-value">{{ numero(total, 0) }}</div>
     <div class="metric-note">Municípios com score</div>
@@ -130,7 +128,7 @@
       </div>
     </div>
     <div class="ranking-table-wrap" tabindex="0" aria-label="Prévia do ranking">
-      <table class="ranking-table">
+      <table class="ranking-table ranking-table-municipios" role="table">
         <thead>
           <tr><th>Município</th><th>{{ 'Score geral' if ativos|length == 4 else 'Score dos eixos selecionados' }}</th><th>Ações</th></tr>
         </thead>
@@ -138,8 +136,8 @@
           {% for item in exemplos %}
           <tr>
             <th scope="row">{{ item.nome }} · {{ item.uf }}</th>
-            <td>{{ numero(item.score) }}</td>
-            <td>{{ acoes(item, favoritos) }}</td>
+            <td class="rotulo-movel" data-rotulo="Score">{{ numero(item.score) }}</td>
+            <td class="acoes-municipio">{{ acoes(item, favoritos) }}</td>
           </tr>
           {% else %}
           <tr><td colspan="3">Nenhum município corresponde aos filtros.</td></tr>

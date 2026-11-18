@@ -1,34 +1,34 @@
-{% macro cabecalho(titulo, subtitulo) %}
+{% macro cabecalho(titulo, subtitulo='') %}
 <div class="welcome-row">
   <div>
     <h1>{{ titulo }}<span class="accent-dot">.</span></h1>
-    <p class="subtitle">{{ subtitulo }}</p>
+    {% if subtitulo %}<p class="subtitle">{{ subtitulo }}</p>{% endif %}
   </div>
 </div>
 {% endmacro %}
 
 {% macro acoes(item, favoritos) %}
 <div class="actions">
-  <a class="row-action" href="/site/municipio.html?id={{ item.id }}" aria-label="Detalhes de {{ item.nome }}" title="Ver detalhes">→</a>
-  <button class="row-action" type="button" data-add="{{ item.id }}" aria-label="Comparar {{ item.nome }}" title="Adicionar à comparação">+</button>
-  <button class="row-action" type="button" data-favorite="{{ item.id }}" aria-label="Favorito {{ item.nome }}" title="Salvar nos favoritos" aria-pressed="{{ 'true' if item.id in favoritos else 'false' }}">{{ '★' if item.id in favoritos else '☆' }}</button>
+  <a class="row-action" href="/site/municipio.html?id={{ item.id }}" aria-label="Detalhes de {{ item.nome }}" title="Ver detalhes"><span>→</span><span class="acao-legenda">Detalhes</span></a>
+  <button class="row-action" type="button" data-add="{{ item.id }}" aria-label="Comparar {{ item.nome }}" title="Adicionar à comparação"><span>+</span><span class="acao-legenda">Comparar</span></button>
+  <button class="row-action" type="button" data-favorite="{{ item.id }}" aria-label="Favorito {{ item.nome }}" title="Salvar nos favoritos" aria-pressed="{{ 'true' if item.id in favoritos else 'false' }}"><span data-estrela>{{ '★' if item.id in favoritos else '☆' }}</span><span class="acao-legenda">{{ 'Salvo' if item.id in favoritos else 'Favoritar' }}</span></button>
 </div>
 {% endmacro %}
 
 {% macro tabela(itens, favoritos, score_label, numero) %}
 <div class="ranking-table-wrap" tabindex="0">
-  <table class="ranking-table">
+  <table class="ranking-table ranking-table-municipios" role="table">
     <thead>
       <tr><th>Posição</th><th>Município</th><th>População</th><th>{{ score_label }}</th><th>Ações</th></tr>
     </thead>
     <tbody>
       {% for item in itens %}
       <tr>
-        <td>{{ (item.position ~ 'º') if item.position else '—' }}</td>
+        <td class="rotulo-movel" data-rotulo="Posição">{{ (item.position ~ 'º') if item.position else '—' }}</td>
         <th scope="row">{{ item.nome }} · {{ item.uf }}</th>
-        <td>{{ numero(item.populacao, 0) }}</td>
-        <td>{{ numero(item.score) }}</td>
-        <td>{{ acoes(item, favoritos) }}</td>
+        <td class="rotulo-movel" data-rotulo="População">{{ numero(item.populacao, 0) }}</td>
+        <td class="rotulo-movel" data-rotulo="{{ score_label }}">{{ numero(item.score) }}</td>
+        <td class="acoes-municipio">{{ acoes(item, favoritos) }}</td>
       </tr>
       {% else %}
       <tr><td colspan="5">Nenhum município encontrado neste recorte.</td></tr>

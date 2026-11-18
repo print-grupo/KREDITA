@@ -56,7 +56,14 @@
   </form>
   <div class="ranking-toolbar">
     <p id="ranking-count" aria-live="polite">{{ numero(total, 0) }} {{ 'município' if total == 1 else 'municípios' }}</p>
-    <button class="button button-outline" type="button" data-share>Compartilhar recorte</button>
+    <div class="actions">
+      <div class="actions" aria-label="Paginação rápida">
+        {% if indice > 1 %}<a class="row-action" data-pagina="{{ indice-1 }}" href="{{ paginar(indice-1) }}" aria-label="Página anterior" title="Página anterior">‹</a>{% else %}<button class="row-action" type="button" disabled aria-label="Página anterior">‹</button>{% endif %}
+        <span class="subtitle" aria-live="polite">{{ indice }} / {{ total_paginas }}</span>
+        {% if indice < total_paginas %}<a class="row-action" data-pagina="{{ indice+1 }}" href="{{ paginar(indice+1) }}" aria-label="Próxima página" title="Próxima página">›</a>{% else %}<button class="row-action" type="button" disabled aria-label="Próxima página">›</button>{% endif %}
+      </div>
+      <button class="button button-outline" type="button" data-share>Compartilhar recorte</button>
+    </div>
   </div>
   {{ tabela(itens, favoritos, 'Score geral' if ativos|length == 4 else 'Score dos eixos selecionados', numero) }}
   <div class="detail-actions" style="margin-top:14px;margin-bottom:0">
