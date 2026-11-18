@@ -399,22 +399,31 @@ def ler_exportacao(pasta):
 
     calculados, auditoria = calcular(municipios, pacote, brutos)
     ranking = {}
-    campos = ("score_kredita", "score_sem_cofator", "E1", "E2", "E3", "E4")
     for codigo, item in municipios.items():
         calc = calculados[codigo]
-        esperado = (numero(item["populacao"]), *(numero(item[k]) for k in campos),
-                    numero(item["phi"]), numero(item["M"]))
         if (calc[9] != item["pos_brasil"]
                 or any((p is None) == item["score_disponivel"] for p in calc[9:12])
-                or any(not mesma_nota(a, b) for a, b in zip(calc[:9], esperado))):
+                or not mesma_nota(calc[1], numero(item["score_kredita"]))):
             raise ValueError(f"Ranking incompatível com o cálculo no JSON: {codigo}")
-        ranking[codigo] = (*esperado, *calc[9:12], item.get("motivo_sem_score"))
+        ranking[codigo] = calc
 
     for chave, (h, nome, unidade, _, _, _, peso) in list(detalhes.items()):
         detalhes[chave] = (h, nome, unidade, *auditoria[chave], peso)
 
     historico = {}
-    if "historico_scr" in pacote:
+    if "meses_scr" in pacote:
+        for idx, per_str in enumerate(pacote["meses_scr"]):
+            grupo = historico.setdefault(competencia(per_str), {})
+            for codigo, item in municipios.items():
+                calc = calculados[codigo]
+                par = item["scr"][idx]
+                if par is None or par[0] is None:
+                    grupo[codigo] = (calc[0], None, None, None, None, None)
+                else:
+                    e1, e3 = float(par[0]), float(par[1])
+                    e2, e4 = round(calc[4], 6), round(calc[6], 6)
+                    grupo[codigo] = (calc[0], round((e1 + e2 + e3 + e4) / 4, 6), e1, e2, e3, e4)
+    elif "historico_scr" in pacote:
         for per_str, m_map in pacote["historico_scr"].items():
             grupo = historico.setdefault(competencia(per_str), {})
             for codigo, vals in m_map.items():

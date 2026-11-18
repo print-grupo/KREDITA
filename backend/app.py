@@ -310,5 +310,20 @@ def municipio_detalhe(cod_ibge):
     return redirect(url_for("kredita_site.arquivos_site", name="municipio.html", id=cod_ibge))
 
 
+def garantir_banco():
+    with conectar_sqlite() as conn:
+        try:
+            if conn.execute("SELECT 1 FROM edicoes_score LIMIT 1").fetchone():
+                return
+        except sqlite3.OperationalError:
+            pass
+        from importar_kredita import ROOT, importar_apostas, ler_exportacao, preparar_banco, publicar
+
+        preparar_banco(conn)
+        publicar(conn, ler_exportacao(ROOT))
+        importar_apostas(conn)
+
+
 if __name__ == "__main__":
+    garantir_banco()
     app.run()
