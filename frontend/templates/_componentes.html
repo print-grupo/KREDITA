@@ -93,7 +93,7 @@
 {% endif %}
 {% endmacro %}
 
-{% macro curva(dados, numero) %}
+{% macro curva(dados, numero, tabela=True) %}
 {% if dados and dados.linhas %}
 {% set ultima_linha = dados.linhas[0] %}
 {% set ultimo_ponto = ultima_linha.vertices[-1] if ultima_linha.vertices else none %}
@@ -132,6 +132,7 @@
     <span style="--x:{{ '%.2f'|format(x) }}%">{{ data_fmt }}</span>
     {% endfor %}
   </div>
+  {% if tabela %}
   <details class="timeline-table">
     <summary>Ver valores <span>({{ dados.datas|length }})</span></summary>
     <div class="ranking-table-wrap" tabindex="0" aria-label="Valores do histórico">
@@ -148,6 +149,7 @@
       </table>
     </div>
   </details>
+  {% endif %}
   {% endif %}
 </div>
 {% else %}

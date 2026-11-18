@@ -74,7 +74,7 @@
 {% if perfis|length >= 2 %}
 <section class="panel ranking-panel" id="comparison-history" data-sobreposto>
   <h2>Histórico lado a lado</h2>
-  {{ curva(sobreposto, numero) }}
+  {{ curva(sobreposto, numero, false) }}
   {% if diferencas %}
   <div class="comparison-history-filters">
     <label class="input-label">Competência
