@@ -295,14 +295,40 @@ document.addEventListener('click', async evento => {
 
 document.addEventListener('change', evento => {
   if (evento.target.matches('[data-diferencas]')) {
+    const mes = evento.target.value;
     for (const lista of document.querySelectorAll('[data-competencia]')) {
-      lista.hidden = lista.dataset.competencia !== evento.target.value;
+      lista.hidden = lista.dataset.competencia !== mes;
+    }
+    const plot = document.querySelector('#comparison-history .timeline-plot');
+    const guide = plot?.querySelector('.comparison-month-guide');
+    if (plot?.dataset.plotDatas && guide) {
+      const pos = JSON.parse(plot.dataset.plotDatas)[mes];
+      if (pos !== undefined) guide.style.left = pos + '%';
+      for (const sel of plot.querySelectorAll('[data-sel-serie]')) {
+        const pt = plot.querySelector(`.comparison-series-point[data-serie="${sel.dataset.selSerie}"][data-mes="${CSS.escape(mes)}"]`);
+        sel.hidden = !pt;
+        if (pt) { sel.style.left = pt.style.left; sel.style.top = pt.style.top; }
+      }
     }
   }
   const formAuto = evento.target.closest('form[data-auto-submit]');
   if (formAuto && evento.target.matches('select')) {
     formAuto.requestSubmit();
   }
+});
+
+document.addEventListener('click', evento => {
+  const plot = evento.target.closest('#comparison-history .timeline-plot[data-plot-datas]');
+  const seletor = document.querySelector('[data-diferencas]');
+  if (!plot || !seletor) return;
+  const posicoes = JSON.parse(plot.dataset.plotDatas);
+  const box = plot.getBoundingClientRect();
+  const alvoX = 100 * (evento.clientX - box.left) / box.width;
+  const maisProximo = Object.entries(posicoes).reduce((melhor, atual) =>
+    Math.abs(atual[1] - alvoX) < Math.abs(melhor[1] - alvoX) ? atual : melhor
+  )[0];
+  seletor.value = maisProximo;
+  seletor.dispatchEvent(new Event('change', { bubbles: true }));
 });
 document.addEventListener('keydown', evento => {
   if (evento.key === 'Escape' && menuMobile.matches && menuAberto && !document.querySelector('#comparacao-busca')?.open) {

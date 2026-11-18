@@ -309,13 +309,15 @@ def painel(pagina, backend):
                 perfis.append(dict(item=item, referencia=median(grupo) if grupo else None, grupo=len(grupo),
                                    publicado=grafico([(item["nome"], pontos(h, "publicado", eixos, True))], escala=escala),
                                    scr=grafico([(item["nome"], pontos(h, "simulacao_scr", eixos))], mensal=True, escala=escala)))
-            diferencas = defaultdict(list)
+            diferencas = {}
             for data in sorted({data for _, serie in sobrepostas for data, _ in serie}):
                 valores_mes = [(nome, dict(serie).get(data)) for nome, serie in sobrepostas]
-                diferencas[data] = [f"{nome} · {numero(valor)}" for nome, valor in valores_mes]
-                for (nome, valor), (outro_nome, outro_valor) in combinations(valores_mes, 2):
-                    if valor is not None and outro_valor is not None:
-                        diferencas[data].append(f"{nome} − {outro_nome}: {valor - outro_valor:+.1f} pontos".replace(".", ","))
+                pares = [
+                    f"{nome} − {outro_nome} ({valor - outro_valor:+.1f} pontos)".replace(".", ",")
+                    for (nome, valor), (outro_nome, outro_valor) in combinations(valores_mes, 2)
+                    if valor is not None and outro_valor is not None
+                ]
+                diferencas[data] = {"valores": valores_mes, "pares": pares}
             contexto.update(perfis=perfis, diferencas=diferencas,
                             sobreposto=grafico(sobrepostas, mensal=tipo != "publicado")
                             if len(sobrepostas) >= 2 else None)

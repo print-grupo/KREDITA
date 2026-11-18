@@ -95,13 +95,16 @@
 
 {% macro curva(dados, numero, tabela=True) %}
 {% if dados and dados.linhas %}
+{% set multi = dados.linhas|length > 1 %}
 {% set ultima_linha = dados.linhas[0] %}
 {% set ultimo_ponto = ultima_linha.vertices[-1] if ultima_linha.vertices else none %}
-<div class="score-timeline" data-timeline>
+<div class="score-timeline {{ 'comparison-timeline' if multi }}" data-timeline>
+  {% if not multi %}
   <div class="timeline-reading" aria-live="polite">
     <span data-leitura>{{ (ultimo_ponto[0][5:7] ~ '/' ~ ultimo_ponto[0][:4]) if ultimo_ponto and ultimo_ponto[0]|length == 7 else (ultimo_ponto[0] if ultimo_ponto else 'Selecione um ponto no gráfico') }}</span>
     <strong data-leitura-score>{{ numero(ultimo_ponto[1]) if ultimo_ponto else '—' }} <small>pts</small></strong>
   </div>
+  {% endif %}
   {% if dados.datas|length > 1 %}
   <div class="timeline-frame">
     <div class="timeline-scale" aria-hidden="true">
@@ -109,21 +112,30 @@
       <span>{{ numero((dados.alto + dados.baixo) / 2, 0) if (dados.alto + dados.baixo) % 2 == 0 else numero((dados.alto + dados.baixo) / 2, 1) }}</span>
       <span>{{ numero(dados.baixo, 0) if (dados.alto + dados.baixo) % 2 == 0 else numero(dados.baixo, 1) }}</span>
     </div>
-    <div class="timeline-plot">
+    <div class="timeline-plot" {% if multi %}data-plot-datas='{{ dados.posicoes|tojson }}'{% endif %}>
       <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
         <path class="chart-gridline" d="M0 0H100 M0 50H100 M0 100H100" />
         {% for linha in dados.linhas %}
-        <path class="timeline-line {{ 'comparison-series-' ~ loop.index0 if dados.linhas|length > 1 }}" d="{{ linha.caminho }}" />
+        <path class="timeline-line {{ 'comparison-series-' ~ loop.index0 if multi }}" d="{{ linha.caminho }}" />
         {% endfor %}
       </svg>
+      {% if multi %}
+      <span class="comparison-month-guide" style="left:100%" aria-hidden="true"></span>
       {% for linha in dados.linhas %}
       {% set serie_idx = loop.index0 %}
-      {% set serie_first = loop.first %}
       {% for data, valor, x, y in linha.vertices %}
+      <span class="comparison-series-point comparison-series-{{ serie_idx }}" data-mes="{{ data }}" data-serie="{{ serie_idx }}" style="left:{{ '%.2f'|format(x) }}%;top:{{ '%.2f'|format(y) }}%" aria-hidden="true"></span>
+      {% if loop.last %}
+      <span class="comparison-selected-point comparison-series-{{ serie_idx }}" data-sel-serie="{{ serie_idx }}" style="left:{{ '%.2f'|format(x) }}%;top:{{ '%.2f'|format(y) }}%" aria-hidden="true"></span>
+      {% endif %}
+      {% endfor %}
+      {% endfor %}
+      {% else %}
+      {% for data, valor, x, y in ultima_linha.vertices %}
       {% set data_fmt = (data[5:7] ~ '/' ~ data[:4]) if data|length == 7 else data %}
-      <button class="timeline-point {{ 'comparison-series-' ~ serie_idx if dados.linhas|length > 1 }}" type="button" style="--x:{{ '%.2f'|format(x) }}%;--y:{{ '%.2f'|format(y) }}%" data-ponto="{{ data_fmt if dados.linhas|length == 1 else (linha.nome ~ ' · ' ~ data_fmt) }}" data-score="{{ numero(valor) }}" data-data="{{ data }}" aria-pressed="{{ 'true' if loop.last and serie_first else 'false' }}" aria-label="{{ linha.nome }} {{ data_fmt }}: {{ numero(valor) }} pontos"></button>
+      <button class="timeline-point" type="button" style="--x:{{ '%.2f'|format(x) }}%;--y:{{ '%.2f'|format(y) }}%" data-ponto="{{ data_fmt }}" data-score="{{ numero(valor) }}" data-data="{{ data }}" aria-pressed="{{ 'true' if loop.last else 'false' }}" aria-label="{{ ultima_linha.nome }} {{ data_fmt }}: {{ numero(valor) }} pontos"></button>
       {% endfor %}
-      {% endfor %}
+      {% endif %}
     </div>
   </div>
   <div class="timeline-dates" aria-hidden="true">

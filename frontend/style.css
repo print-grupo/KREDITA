@@ -312,6 +312,7 @@ meter::-webkit-meter-optimum-value { background: var(--green); }
 .comparison-series-point { width: 6px; height: 6px; border: 1px solid var(--surface); }
 .comparison-selected-point { width: 12px; height: 12px; border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--series-color); }
 .comparison-history-values, .comparison-history-differences { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 12px; padding: 0; list-style: none; }
+.comparison-history-values[hidden], .comparison-history-differences[hidden], .comparison-history-reading > [hidden] { display: none; }
 .comparison-history-values li, .comparison-history-differences li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; padding: 7px 10px; border-radius: 8px; background: var(--bg); }
 .comparison-history-values i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--series-color); }
 .comparison-history-reading h3 { margin: 0; font-size: 14px; }

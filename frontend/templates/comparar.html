@@ -74,20 +74,40 @@
 {% if perfis|length >= 2 %}
 <section class="panel ranking-panel" id="comparison-history" data-sobreposto>
   <h2>Histórico lado a lado</h2>
-  {{ curva(sobreposto, numero, false) }}
   {% if diferencas %}
   <div class="comparison-history-filters">
     <label class="input-label">Competência
       <select data-diferencas>
-        {% for data in diferencas %}<option value="{{ data }}" {% if loop.last %}selected{% endif %}>{{ data }}</option>{% endfor %}
+        {% for data in diferencas %}
+        {% set data_fmt = (data[5:7] ~ '/' ~ data[:4]) if data|length == 7 else data %}
+        <option value="{{ data }}" {% if loop.last %}selected{% endif %}>{{ data_fmt }}</option>
+        {% endfor %}
       </select>
     </label>
   </div>
+  {% endif %}
+  {{ curva(sobreposto, numero, false) }}
+  {% if diferencas %}
   <div class="comparison-history-reading" aria-live="polite">
-    {% for data, linhas in diferencas.items() %}
-    <ul class="comparison-history-values" data-competencia="{{ data }}" {% if not loop.last %}hidden{% endif %}>
-      {% for linha in linhas %}<li>{{ linha }}</li>{% endfor %}
-    </ul>
+    {% for data, info in diferencas.items() %}
+    <div data-competencia="{{ data }}" {% if not loop.last %}hidden{% endif %}>
+      <ul class="comparison-history-values">
+        {% for nome, valor in info.valores %}
+        <li>
+          <span class="comparison-series-{{ loop.index0 }}"><i aria-hidden="true"></i> {{ nome }}</span>
+          <strong>{{ (numero(valor) ~ ' pts') if valor is not none else 'Sem score' }}</strong>
+        </li>
+        {% endfor %}
+      </ul>
+      <h3>Diferença no mês</h3>
+      {% if info.pares %}
+      <ul class="comparison-history-differences">
+        {% for par in info.pares %}<li>{{ par }}</li>{% endfor %}
+      </ul>
+      {% else %}
+      <p class="empty-result">São necessários dois scores na competência para calcular a diferença.</p>
+      {% endif %}
+    </div>
     {% endfor %}
   </div>
   {% endif %}
