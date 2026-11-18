@@ -79,7 +79,8 @@ function sincronizar() {
     const estrela = botao.querySelector('[data-estrela]');
     if (estrela) {
       estrela.textContent = salvo ? '★' : '☆';
-      botao.querySelector('.acao-legenda').textContent = salvo ? 'Salvo' : 'Favoritar';
+      const legenda = botao.querySelector('.acao-legenda');
+      if (legenda) legenda.textContent = salvo ? 'Salvo' : 'Favoritar';
     } else {
       botao.textContent = salvo ? '★' : '☆';
     }
@@ -238,13 +239,18 @@ document.addEventListener('click', async evento => {
   }
   if (dados.moveUp || dados.moveDown) {
     const alvoId = dados.moveUp || dados.moveDown;
-    const ids = lista('favoritos');
+    let ids = lista('favoritos');
+    if (!ids.length) {
+      ids = [...document.querySelectorAll('[data-move-up]')].map(el => el.dataset.moveUp);
+    }
     const idx = ids.indexOf(alvoId);
     const destino = dados.moveUp ? idx - 1 : idx + 1;
     if (idx !== -1 && destino >= 0 && destino < ids.length) {
       [ids[idx], ids[destino]] = [ids[destino], ids[idx]];
       guardar(chaves.favoritos, ids);
-      atualizar(new URL(location.href), false);
+      const url = new URL(location.href);
+      if (url.searchParams.has('favoritos')) url.searchParams.set('favoritos', ids.join(','));
+      atualizar(url, false);
     }
   }
   if (dados.add || dados.remove) {
