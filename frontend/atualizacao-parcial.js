@@ -48,10 +48,15 @@ function formatarFaixa(valor) {
 function renderizarLegenda(faixas) {
   const legenda = document.querySelector('#map-legend');
   if (!legenda) return;
+  const tituloEscala = document.querySelector('#map-scale-title');
+  if (tituloEscala) {
+    const eixos = (painel()?.dataset.eixos || '1,2,3,4').split(',').filter(Boolean);
+    tituloEscala.textContent = eixos.length === 4 ? 'Score geral' : 'Score dos eixos selecionados';
+  }
   const itens = faixas.map(({ min, max, color }, indice) => {
-    const intervalo = min === max
-      ? formatarFaixa(max)
-      : (indice ? '> ' + formatarFaixa(min) + ' a ' + formatarFaixa(max) : formatarFaixa(min) + ' a ' + formatarFaixa(max));
+    const intervalo = indice
+      ? 'Acima de ' + formatarFaixa(min) + ' até ' + formatarFaixa(max)
+      : (min === max ? formatarFaixa(max) : formatarFaixa(min) + '–' + formatarFaixa(max));
     return `<li><span style="--swatch:${color}"></span>${intervalo}</li>`;
   });
   itens.push('<li><span style="--swatch:var(--map-unrated)"></span>Fora do recorte ou sem dados</li>');
@@ -60,7 +65,7 @@ function renderizarLegenda(faixas) {
 
 function sincronizar() {
   const encaixe = document.querySelector('[data-map-slot]');
-  if (secaoMapa && encaixe && secaoMapa.parentElement !== encaixe) encaixe.append(secaoMapa);
+  if (secaoMapa && encaixe) encaixe.replaceWith(secaoMapa);
   const cabecalhoMapa = document.querySelector('#map-header-controls');
   const slotCabecalho = secaoMapa?.querySelector('[data-map-header-slot]');
   if (cabecalhoMapa && slotCabecalho) {
@@ -163,7 +168,7 @@ document.addEventListener('submit', async evento => {
 });
 
 document.addEventListener('click', async evento => {
-  for (const aberto of document.querySelectorAll('details.axis-scope[open], details.ranking-triage[open]')) {
+  for (const aberto of document.querySelectorAll('details.axis-scope[open], details.ranking-triage[open], details.dashboard-extra-filters[open]')) {
     if (!aberto.contains(evento.target)) aberto.open = false;
   }
   const alvo = evento.target.closest('a, button, [data-ponto]');
@@ -253,7 +258,13 @@ document.addEventListener('click', async evento => {
     atualizar(url);
   }
   if (dados.ponto) {
-    alvo.closest('[data-timeline]').querySelector('[data-leitura]').textContent = dados.ponto;
+    const timeline = alvo.closest('[data-timeline]');
+    timeline.querySelector('[data-leitura]').textContent = dados.ponto;
+    const scoreEl = timeline.querySelector('[data-leitura-score]');
+    if (scoreEl && dados.score) scoreEl.innerHTML = dados.score + ' <small>pts</small>';
+    for (const btn of timeline.querySelectorAll('.timeline-point')) {
+      btn.setAttribute('aria-pressed', String(btn === alvo));
+    }
     const seletor = document.querySelector('[data-diferencas]');
     if (seletor && alvo.closest('[data-sobreposto]') && dados.data) {
       seletor.value = dados.data;
@@ -267,6 +278,10 @@ document.addEventListener('change', evento => {
     for (const lista of document.querySelectorAll('[data-competencia]')) {
       lista.hidden = lista.dataset.competencia !== evento.target.value;
     }
+  }
+  const formAuto = evento.target.closest('form[data-auto-submit]');
+  if (formAuto && evento.target.matches('select')) {
+    formAuto.requestSubmit();
   }
 });
 document.addEventListener('keydown', evento => {

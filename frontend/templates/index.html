@@ -1,16 +1,39 @@
 {% extends 'base.html' %}
-{% from '_componentes.html' import cabecalho, acoes, seletores, perfil, curva %}
+{% from '_componentes.html' import cabecalho, acoes, seletor_eixos, perfil, curva %}
 {% block conteudo %}
 {{ cabecalho('Panorama territorial', 'Explore os municípios por estado, porte populacional e eixo de análise.') }}
-<section class="panel ranking-panel" aria-label="Busca e filtros do dashboard">
-  <form data-parcial method="get" class="rank-filters">
-    {{ seletores(filtros, ufs, eixos, ativos) }}
-    <div class="actions">
-      <button class="button button-primary" type="submit">Aplicar filtros</button>
-      <a class="button button-quiet" data-parcial href="/site/?eixos={{ eixos_url }}">Limpar filtros</a>
-    </div>
+<section class="panel" aria-label="Busca e filtros do dashboard">
+  <form data-parcial data-auto-submit method="get" class="dashboard-filters" style="margin-bottom:0;border:0;box-shadow:none">
+    <label class="input-label">Buscar município
+      <input type="search" name="busca" value="{{ filtros.busca }}" placeholder="Digite o nome ou código IBGE" autocomplete="off">
+    </label>
+    <label class="input-label">Estado (UF)
+      <select name="uf">
+        <option value="">Todos os estados</option>
+        {% for uf in ufs %}<option value="{{ uf }}" {% if filtros.uf == uf %}selected{% endif %}>{{ uf }}</option>{% endfor %}
+      </select>
+    </label>
+    {{ seletor_eixos(eixos, ativos) }}
+    <details class="dashboard-extra-filters">
+      <summary class="button button-outline">Mais filtros</summary>
+      <div class="dashboard-extra-fields filter-popover">
+        <label class="input-label">População
+          <select name="porte">
+            <option value="">Todos os portes</option>
+            {% for chave, rotulo in [('small','Até 20 mil'),('medium','Mais de 20 mil até 100 mil'),('large','Acima de 100 mil')] %}
+            <option value="{{ chave }}" {% if filtros.porte == chave %}selected{% endif %}>{{ rotulo }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <button class="button button-primary" type="submit">Aplicar</button>
+      </div>
+    </details>
+    <a id="dashboard-clear" class="button button-quiet" data-parcial href="/site/?eixos={{ eixos_url }}">Limpar filtros</a>
+    {% set rotulos_porte = {'small':'Até 20 mil','medium':'Mais de 20 mil até 100 mil','large':'Acima de 100 mil'} %}
+    {% set resumo_filtros = [filtros.uf, rotulos_porte.get(filtros.porte, '')] | select | join(' · ') %}
+    <p id="active-filters" class="subtitle" aria-live="polite">{{ resumo_filtros }}</p>
   </form>
-  <div data-busca-resultados>
+  <div data-busca-resultados style="{% if sugestoes %}padding: 0 17px 14px{% endif %}">
     {% if sugestoes %}
     <ul class="suggestions">
       {% for item in sugestoes %}
@@ -56,8 +79,8 @@
   </article>
   {% if aposta %}
   <article class="metric-card dashboard-metric bets-card">
-    <div class="metric-top"><span>Apostas esportivas online</span><span class="metric-icon" aria-hidden="true">◉</span></div>
-    <div class="metric-value">{{ numero(aposta.valor, 1) }}% <small>{% if aposta.margem_pp is not none %}± {{ numero(aposta.margem_pp, 1) }} p.p.{% endif %}</small></div>
+    <div class="metric-top">Apostas esportivas online</div>
+    <div class="metric-value">{{ numero(aposta.valor, 0 if aposta.valor == (aposta.valor | int) else 1) }}% <small>{% if aposta.margem_pp is not none %}± {{ numero(aposta.margem_pp, 0 if aposta.margem_pp == (aposta.margem_pp | int) else 1) }} p.p.{% endif %}</small></div>
     <div class="metric-note">{{ 'Contexto estadual · ' ~ aposta.uf if aposta.uf != 'BR' else 'Brasil' }} · DataSenado · {{ apostas.inicio[:4] }}</div>
     <a href="/site/apostas.html{{ '?uf=' ~ aposta.uf if aposta.uf != 'BR' else '' }}">Explorar dados de apostas →</a>
   </article>
@@ -66,10 +89,10 @@
 
 <div id="map-header-controls" hidden>
   <div class="map-locator">
-    <form data-parcial method="get" class="actions" style="align-items:end">
+    <form data-parcial data-auto-submit method="get">
       <input type="hidden" name="uf" value="{{ filtros.uf }}">
       <input type="hidden" name="eixos" value="{{ eixos_url }}">
-      <label class="input-label" style="flex:1">Município no mapa
+      <label class="input-label">Município no mapa
         <select name="id" {% if not filtros.uf %}disabled{% endif %}>
           <option value="">{{ 'Escolha um município' if filtros.uf else 'Escolha a UF nos filtros' }}</option>
           {% for item in lista_uf %}
@@ -77,7 +100,7 @@
           {% endfor %}
         </select>
       </label>
-      <button class="button button-outline" type="submit" {% if not filtros.uf %}disabled{% endif %}>Selecionar</button>
+      <button class="sr-only" type="submit" {% if not filtros.uf %}disabled{% endif %}>Selecionar</button>
     </form>
   </div>
   <div id="selection" class="map-selection" aria-live="polite">

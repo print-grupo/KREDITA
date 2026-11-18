@@ -98,42 +98,56 @@
 {% set ultimo_ponto = ultima_linha.vertices[-1] if ultima_linha.vertices else none %}
 <div class="score-timeline" data-timeline>
   <div class="timeline-reading" aria-live="polite">
-    <span data-leitura>{{ (ultima_linha.nome ~ ' · ' ~ ultimo_ponto[0] ~ ' · ' ~ numero(ultimo_ponto[1]) ~ ' pts') if ultimo_ponto else 'Selecione um ponto no gráfico' }}</span>
+    <span data-leitura>{{ (ultimo_ponto[0][5:7] ~ '/' ~ ultimo_ponto[0][:4]) if ultimo_ponto and ultimo_ponto[0]|length == 7 else (ultimo_ponto[0] if ultimo_ponto else 'Selecione um ponto no gráfico') }}</span>
+    <strong data-leitura-score>{{ numero(ultimo_ponto[1]) if ultimo_ponto else '—' }} <small>pts</small></strong>
   </div>
-  <svg class="timeline-svg" viewBox="0 0 600 175" role="img" aria-label="Histórico do score">
-    {% for y, legenda in [(20,dados.alto),(87,(dados.alto+dados.baixo)/2),(154,dados.baixo)] %}
-    <text x="34" y="{{ y }}" dy=".35em" text-anchor="end" fill="var(--muted)" font-size="11">{{ numero(legenda,0) }}</text>
-    <line x1="42" x2="578" y1="{{ y }}" y2="{{ y }}" class="chart-gridline"/>
+  {% if dados.datas|length > 1 %}
+  <div class="timeline-frame">
+    <div class="timeline-scale" aria-hidden="true">
+      <span>{{ numero(dados.alto, 0) if (dados.alto + dados.baixo) % 2 == 0 else numero(dados.alto, 1) }}</span>
+      <span>{{ numero((dados.alto + dados.baixo) / 2, 0) if (dados.alto + dados.baixo) % 2 == 0 else numero((dados.alto + dados.baixo) / 2, 1) }}</span>
+      <span>{{ numero(dados.baixo, 0) if (dados.alto + dados.baixo) % 2 == 0 else numero(dados.baixo, 1) }}</span>
+    </div>
+    <div class="timeline-plot">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <path class="chart-gridline" d="M0 0H100 M0 50H100 M0 100H100" />
+        {% for linha in dados.linhas %}
+        <path class="timeline-line {{ 'comparison-series-' ~ loop.index0 if dados.linhas|length > 1 }}" d="{{ linha.caminho }}" />
+        {% endfor %}
+      </svg>
+      {% for linha in dados.linhas %}
+      {% set serie_idx = loop.index0 %}
+      {% set serie_first = loop.first %}
+      {% for data, valor, x, y in linha.vertices %}
+      {% set data_fmt = (data[5:7] ~ '/' ~ data[:4]) if data|length == 7 else data %}
+      <button class="timeline-point {{ 'comparison-series-' ~ serie_idx if dados.linhas|length > 1 }}" type="button" style="--x:{{ '%.2f'|format(x) }}%;--y:{{ '%.2f'|format(y) }}%" data-ponto="{{ data_fmt if dados.linhas|length == 1 else (linha.nome ~ ' · ' ~ data_fmt) }}" data-score="{{ numero(valor) }}" data-data="{{ data }}" aria-pressed="{{ 'true' if loop.last and serie_first else 'false' }}" aria-label="{{ linha.nome }} {{ data_fmt }}: {{ numero(valor) }} pontos"></button>
+      {% endfor %}
+      {% endfor %}
+    </div>
+  </div>
+  <div class="timeline-dates" aria-hidden="true">
+    {% for data, x in dados.marcas_datas %}
+    {% set data_fmt = (data[5:7] ~ '/' ~ data[:4]) if data|length == 7 else data %}
+    <span style="--x:{{ '%.2f'|format(x) }}%">{{ data_fmt }}</span>
     {% endfor %}
-    {% for linha in dados.linhas %}
-    {% set cor = ['var(--green-dark)','#2f61ab','#d48b21'][loop.index0] %}
-    <path d="{{ linha.caminho }}" fill="none" stroke="{{ cor }}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-    {% for data, valor, x, y in linha.vertices %}
-    <circle tabindex="0" role="button" aria-label="{{ linha.nome }} {{ data }} · {{ numero(valor) }}" data-ponto="{{ linha.nome }} · {{ data }} · {{ numero(valor) }} pts" data-data="{{ data }}" cx="{{ x }}" cy="{{ y }}" r="5" fill="{{ cor }}" stroke="var(--surface)" stroke-width="2">
-      <title>{{ linha.nome }} · {{ data }} · {{ numero(valor) }}</title>
-    </circle>
-    {% endfor %}
-    {% endfor %}
-  </svg>
-  <div class="timeline-dates" style="display:flex;justify-content:space-between;margin:4px 12px 8px 42px">
-    <span style="position:static;transform:none">{{ dados.datas[0] }}</span>
-    {% if dados.datas|length > 1 %}<span style="position:static;transform:none">{{ dados.datas[-1] }}</span>{% endif %}
   </div>
   <details class="timeline-table">
-    <summary>Consultar valores <span>({{ dados.datas|length }})</span></summary>
-    <div class="ranking-table-wrap">
+    <summary>Ver valores <span>({{ dados.datas|length }})</span></summary>
+    <div class="ranking-table-wrap" tabindex="0" aria-label="Valores do histórico">
       <table class="ranking-table">
-        <thead><tr><th>Série</th><th>Competência</th><th>Score</th></tr></thead>
+        <thead><tr>{% if dados.linhas|length > 1 %}<th>Série</th>{% endif %}<th scope="col">Competência</th><th scope="col">Score</th></tr></thead>
         <tbody>
           {% for linha in dados.linhas %}
           {% for data, valor, x, y in linha.vertices %}
-          <tr><td>{{ linha.nome }}</td><td>{{ data }}</td><td>{{ numero(valor) }}</td></tr>
+          {% set data_fmt = (data[5:7] ~ '/' ~ data[:4]) if data|length == 7 else data %}
+          <tr>{% if dados.linhas|length > 1 %}<td>{{ linha.nome }}</td>{% endif %}<th scope="row">{{ data_fmt }}</th><td>{{ numero(valor) }}</td></tr>
           {% endfor %}
           {% endfor %}
         </tbody>
       </table>
     </div>
   </details>
+  {% endif %}
 </div>
 {% else %}
 <p class="empty-result">Histórico indisponível.</p>

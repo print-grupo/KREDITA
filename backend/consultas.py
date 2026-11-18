@@ -14,7 +14,7 @@ from werkzeug.exceptions import NotFound
 
 
 PAGINAS = {
-    "index": "Visão geral", "ranking": "Ranking", "municipio": "Município",
+    "index": "Visão geral", "ranking": "Ranking municipal", "municipio": "Município",
     "favoritos": "Favoritos", "comparar": "Comparar municípios",
     "guia": "Guia do site", "metodologia": "Metodologia e fontes", "apostas": "Apostas",
 }
@@ -86,9 +86,14 @@ def grafico(series, mensal=False, escala=None):
     valores = [valor for _, pontos in series for _, valor in pontos if valor is not None]
     if not valores:
         return None
-    baixo, alto = escala or (min(valores), max(valores))
-    baixo, alto = max(0, math.floor(baixo / 5) * 5 - 5), min(100, math.ceil(alto / 5) * 5 + 5)
-    posicoes = {data: 46 + 526 * indice / max(1, len(datas) - 1) for indice, data in enumerate(datas)}
+    baixo_v, alto_v = escala or (min(valores), max(valores))
+    passo = next((t for t in (5, 10, 20, 25) if (alto_v - baixo_v) / t <= 4), 25)
+    baixo = max(0, math.floor((baixo_v - passo / 2) / passo) * passo)
+    alto = min(100, math.ceil((alto_v + passo / 2) / passo) * passo)
+    if alto <= baixo:
+        baixo, alto = max(0, baixo - 5), min(100, alto + 5)
+    span = max(1, len(datas) - 1)
+    posicoes = {data: 50.0 if len(datas) == 1 else 100.0 * indice / span for indice, data in enumerate(datas)}
     linhas = []
     for nome, pontos in series:
         mapa = dict(pontos)
@@ -98,12 +103,16 @@ def grafico(series, mensal=False, escala=None):
             if valor is None:
                 iniciar = True
                 continue
-            x, y = posicoes[data], 154 - (valor - baixo) * 134 / (alto - baixo)
+            x, y = posicoes[data], 100.0 * (alto - valor) / (alto - baixo)
             vertices.append((data, valor, x, y))
-            comandos.append(f"{'M' if iniciar else 'L'}{x:.2f},{y:.2f}")
+            comandos.append(f"{'M' if iniciar else 'L'}{x:.2f} {y:.2f}")
             iniciar = False
         linhas.append(dict(nome=nome, vertices=vertices, caminho=" ".join(comandos)))
-    return dict(linhas=linhas, datas=datas, baixo=baixo, alto=alto, posicoes=posicoes)
+    meio = next((d for d in datas[1:-1] if 40 <= posicoes[d] <= 60), None) if len(datas) > 2 else None
+    marcas_datas = [(datas[0], 50.0)] if len(datas) == 1 else (
+        [(datas[0], 0.0)] + ([(meio, posicoes[meio])] if meio else []) + [(datas[-1], 100.0)]
+    )
+    return dict(linhas=linhas, datas=datas, marcas_datas=marcas_datas, baixo=baixo, alto=alto, posicoes=posicoes)
 
 
 def pontos(historico, tipo, eixos, revisoes=False):
@@ -245,7 +254,7 @@ def painel(pagina, backend):
                                s.e1, s.e2, s.e3, s.e4
                         FROM edicoes_score e JOIN scores_municipais s ON s.edicao_id=e.id
                         WHERE e.tipo='simulacao_scr' AND e.lote_id=({LOTE_SCR})""", codigos, eixos)
-            contexto.update(total=len(recorte(catalogo, filtros)), media=mean(i["score"] for i in itens) if itens else None,
+            contexto.update(total=len(itens), media=mean(i["score"] for i in itens) if itens else None,
                             lista_uf=[i for i in catalogo if filtros["uf"] and i["uf"] == filtros["uf"]],
                             mapa=[[i["id"], i["score"]] for i in itens],
                             exemplos=itens[:5],

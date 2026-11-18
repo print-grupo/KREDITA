@@ -1,10 +1,26 @@
 {% extends 'base.html' %}
-{% from '_componentes.html' import cabecalho, tabela, seletores %}
+{% from '_componentes.html' import cabecalho, tabela, seletor_eixos %}
 {% block conteudo %}
 {{ cabecalho('Ranking municipal', 'Encontre municípios e ajuste a ordem dos resultados.') }}
 <section class="panel ranking-panel" aria-label="Ranking municipal">
-  <form data-parcial method="get" class="rank-filters">
-    {{ seletores(filtros, ufs, eixos, ativos) }}
+  <form data-parcial data-auto-submit method="get" class="rank-filters">
+    <label class="input-label">Buscar município
+      <input type="search" name="busca" value="{{ filtros.busca }}" placeholder="Digite o nome ou código IBGE" autocomplete="off">
+    </label>
+    <label class="input-label">UF
+      <select name="uf">
+        <option value="">Todas as UFs</option>
+        {% for uf in ufs %}<option value="{{ uf }}" {% if filtros.uf == uf %}selected{% endif %}>{{ uf }}</option>{% endfor %}
+      </select>
+    </label>
+    <label class="input-label">População
+      <select name="porte">
+        <option value="">Todos os portes</option>
+        {% for chave, rotulo in [('small','Até 20 mil'),('medium','Mais de 20 mil até 100 mil'),('large','Acima de 100 mil')] %}
+        <option value="{{ chave }}" {% if filtros.porte == chave %}selected{% endif %}>{{ rotulo }}</option>
+        {% endfor %}
+      </select>
+    </label>
     <label class="input-label">Ordenar por
       <select name="ordem">
         {% for valor, nome in [('', 'Maior score'),('score-asc','Menor score'),('name','Nome (A–Z)'),('population','Maior população')] %}
@@ -12,6 +28,7 @@
         {% endfor %}
       </select>
     </label>
+    {{ seletor_eixos(eixos, ativos) }}
     {% set qtd_minimos = filtros.minimos | select('ne', none) | list | length %}
     <details class="ranking-triage">
       <summary class="button button-outline">Mínimos por eixo {% if qtd_minimos %}<span id="ranking-minimum-count">{{ qtd_minimos }}</span>{% endif %}</summary>
@@ -34,17 +51,12 @@
         </div>
       </div>
     </details>
-    <div class="actions">
-      <button class="button button-primary" type="submit">Aplicar filtros</button>
-      <a class="button button-quiet" data-parcial href="{{ url_pagina }}?eixos={{ eixos_url }}">Limpar filtros</a>
-    </div>
+    <button class="sr-only" type="submit">Aplicar filtros</button>
+    <a class="button button-quiet" data-parcial href="{{ url_pagina }}?eixos={{ eixos_url }}">Limpar filtros</a>
   </form>
   <div class="ranking-toolbar">
-    <p id="ranking-count" aria-live="polite">{{ numero(total, 0) }} município(s) · Edição {{ edicao.competencia }}</p>
-    <div class="actions">
-      <button class="button button-outline" type="button" data-share>Compartilhar recorte</button>
-      <a class="button button-outline" data-exportar href="{{ exportar() }}">Exportar CSV</a>
-    </div>
+    <p id="ranking-count" aria-live="polite">{{ numero(total, 0) }} {{ 'município' if total == 1 else 'municípios' }}</p>
+    <button class="button button-outline" type="button" data-share>Compartilhar recorte</button>
   </div>
   {{ tabela(itens, favoritos, 'Score geral' if ativos|length == 4 else 'Score dos eixos selecionados', numero) }}
   <div class="detail-actions" style="margin-top:14px;margin-bottom:0">
