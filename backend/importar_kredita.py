@@ -1,5 +1,4 @@
 import argparse
-import contextlib
 import csv
 import hashlib
 import io
@@ -15,8 +14,6 @@ from itertools import groupby
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-BASE = ROOT
-ARQUIVOS = ("score_kredita.json",)
 EIXOS = ("risco", "capacidade", "inclusao", "demografia")
 AJUSTES = {"i01": -1, "i03": -1, "i08": 1, "i11": -1}
 MENSAIS = {"i01", "i03", "i05", "i06", "i08", "i09", "i10", "i11"}
@@ -161,7 +158,7 @@ def escolher(candidatos, indicador, mes):
 
 
 def checar_metodo(pacote):
-    _, base, municipios, esperado, obs, detalhes, periodo, _ = ler_exportacao(BASE)
+    _, base, municipios, esperado, obs, detalhes, periodo, _ = ler_exportacao(ROOT / "dados")
 
     def definicoes(dados):
         return {ind["id"]: tuple(ind[k] for k in CAMPOS_METODO) for ind in dados["indicadores"]}
@@ -311,36 +308,25 @@ def recalcular_observacoes(conn, pacote, municipios, obs, detalhes, periodo, est
 def preparar_banco(conn):
     import sqlite3
 
-    migrations = ROOT / "migrations"
+    esquema = ROOT / "banco_de_dados/001_sqlite.sql"
     with conn.transaction():
-        for migration in sorted(migrations.glob("*.sql")):
-            comando = ""
-            for linha in migration.read_text(encoding="utf-8").splitlines(keepends=True):
-                comando += linha
-                if sqlite3.complete_statement(comando):
-                    conn.cursor().execute(comando)
-                    comando = ""
-            if comando.strip():
-                raise ValueError(f"Comando SQL incompleto em {migration.name}.")
+        comando = ""
+        for linha in esquema.read_text(encoding="utf-8").splitlines(keepends=True):
+            comando += linha
+            if sqlite3.complete_statement(comando):
+                conn.cursor().execute(comando)
+                comando = ""
+        if comando.strip():
+            raise ValueError(f"Comando SQL incompleto em {esquema.name}.")
 
 
 def importar_apostas(conn, data=None):
     if data is None:
-        for caminho in (
-            ROOT / "kredita-demo/apostas.json",
-            ROOT.parent / "frontend/apostas.json",
-            ROOT.parent / "frontend/kredita-demo/apostas.json",
-        ):
-            if caminho.exists():
-                data = json.loads(caminho.read_text(encoding="utf-8"))
-                break
-    if data is None:
-        raise FileNotFoundError("apostas.json não encontrado.")
+        data = json.loads((ROOT / "dados/apostas.json").read_text(encoding="utf-8"))
     rows = data["territorios"]
     if len(rows) != 28 or {row["uf"] for row in rows} != UFS | {"BR"}:
         raise ValueError("A tabela precisa conter Brasil e as 27 UFs, sem duplicatas.")
     with conn.transaction():
-        conn.execute((ROOT / "migrations/001_sqlite.sql").read_text(encoding="utf-8"))
         conn.execute(
             """INSERT INTO estudos_apostas (id, estudo, inicio, fim, metrica, unidade, fonte)
                VALUES (:id, :estudo, :inicio, :fim, :metrica, :unidade, :fonte)
@@ -356,10 +342,17 @@ def importar_apostas(conn, data=None):
         )
 
 
+def carregar_apostas_pendentes(conn):
+    if not conn.execute(
+        "SELECT 1 FROM estimativas_apostas GROUP BY estudo_id HAVING count(*) = 28"
+    ).fetchone():
+        importar_apostas(conn)
+
+
 def ler_exportacao(pasta):
-    files = {name: (pasta / name).read_bytes() for name in ARQUIVOS}
-    hashes = {name: digest(data) for name, data in files.items()}
-    pacote = json.loads(files["score_kredita.json"].decode("utf-8-sig"))
+    raw = (pasta / "score_kredita.json").read_bytes()
+    hashes = {"score_kredita.json": digest(raw)}
+    pacote = json.loads(raw.decode("utf-8-sig"))
     config = pacote["configuracao"]
     if (pacote["schema_version"] != "kredita-integracao-2"
             or len(config["axes"]) != len(EIXOS) or set(config["axes"]) != set(EIXOS)):
@@ -432,22 +425,6 @@ def ler_exportacao(pasta):
                     e1, e3 = float(par[0]), float(par[1])
                     e2, e4 = round(calc[4], 6), round(calc[6], 6)
                     grupo[codigo] = (calc[0], round((e1 + e2 + e3 + e4) / 4, 6), e1, e2, e3, e4)
-    elif "historico_scr" in pacote:
-        for per_str, m_map in pacote["historico_scr"].items():
-            grupo = historico.setdefault(competencia(per_str), {})
-            for codigo, vals in m_map.items():
-                grupo[codigo] = (numero(municipios[codigo]["populacao"]), *(numero(v) for v in vals))
-    elif (pasta / "historico_parcial.csv").exists():
-        raw_hist = (pasta / "historico_parcial.csv").read_bytes()
-        hashes["historico_parcial.csv"] = digest(raw_hist)
-        for row in csv_rows(raw_hist):
-            codigo = row["codigo_ibge"]
-            item = municipios[codigo]
-            grupo = historico.setdefault(competencia(row["periodo"]), {})
-            if codigo in grupo:
-                raise ValueError(f"Município duplicado na simulação: {codigo}")
-            grupo[codigo] = (numero(item["populacao"]), numero(row["score"]),
-                             *(numero(row[eixo]) for eixo in EIXOS))
     if not historico or any(grupo.keys() != municipios.keys() for grupo in historico.values()):
         raise ValueError("Simulação incompleta. Meses podem faltar, mas uma competência deve incluir todos os municípios.")
     return hashes, pacote, municipios, ranking, observacoes, detalhes, periodos.pop(), historico
@@ -581,19 +558,24 @@ def coletar_fontes_publicas(mes_alvo, municipios, fetcher_json=buscar_json_api, 
             if alvo_csv:
                 with zf.open(alvo_csv) as f:
                     reader = csv.DictReader(io.TextIOWrapper(f, encoding="utf-8-sig"), delimiter=";")
+                    faixas_15_90 = (
+                        "vencido_acima_de_15_ate_30_dias",
+                        "vencido_acima_de_31_ate_60_dias",
+                        "vencido_acima_de_61_ate_90_dias",
+                    )
                     for row in reader:
                         if row.get("cliente") != "PF" or row.get("uf") not in UFS:
                             continue
                         uf = row["uf"]
-                        num_pt = lambda k: float((row.get(k) or "0").replace(".", "").replace(",", "."))
-                        soma_ativa[uf] += num_pt("carteira_ativa")
-                        soma_inad[uf] += num_pt("carteira_inadimplida_arrastada")
-                        v15 = sum(num_pt(f"vencido_acima_de_{d}_ate_{fim}_dias") for d, fim in ((15, 30), (31, 60), (61, 90)))
-                        v90 = sum(num_pt(k) for k in row if k.startswith("vencido_acima_de_") and k not in (
-                            "vencido_acima_de_15_ate_30_dias", "vencido_acima_de_31_ate_60_dias", "vencido_acima_de_61_ate_90_dias"
-                        ))
-                        soma_v15_90[uf] += v15
-                        soma_v90[uf] += v90
+                        soma_ativa[uf] += float((row.get("carteira_ativa") or "0").replace(".", "").replace(",", "."))
+                        soma_inad[uf] += float((row.get("carteira_inadimplida_arrastada") or "0").replace(".", "").replace(",", "."))
+                        soma_v15_90[uf] += sum(
+                            float((row.get(k) or "0").replace(".", "").replace(",", ".")) for k in faixas_15_90
+                        )
+                        soma_v90[uf] += sum(
+                            float((row.get(k) or "0").replace(".", "").replace(",", "."))
+                            for k in row if k.startswith("vencido_acima_de_") and k not in faixas_15_90
+                        )
         if len(soma_ativa) == 27:
             coletados["i01"] = {uf: 100.0 * soma_inad[uf] / soma_ativa[uf] for uf in UFS if soma_ativa[uf] > 0}
             coletados["i03"] = {
@@ -618,17 +600,17 @@ def coletar_fontes_publicas(mes_alvo, municipios, fetcher_json=buscar_json_api, 
                 with zf.open(csv_name) as f:
                     linhas = (line.decode("latin-1") for line in f if not line.startswith(b"#"))
                     reader = csv.DictReader(linhas, delimiter=";")
+                    verbetes_dep = (
+                        "VERBETE_401_DEPOSITOS_A_VISTA_DO_PUBLICO",
+                        "VERBETE_420_DEPOSITOS_DE_POUPANCA",
+                        "VERBETE_432_DEPOSITOS_A_PRAZO",
+                    )
                     for row in reader:
                         uf = (row.get("UF") or "").strip()
                         if uf not in UFS:
                             continue
-                        num_v = lambda k: float((row.get(k) or "0").replace(",", "."))
-                        cred_uf[uf] += num_v("VERBETE_160_OPERACOES_DE_CREDITO")
-                        dep_uf[uf] += (
-                            num_v("VERBETE_401_DEPOSITOS_A_VISTA_DO_PUBLICO")
-                            + num_v("VERBETE_420_DEPOSITOS_DE_POUPANCA")
-                            + num_v("VERBETE_432_DEPOSITOS_A_PRAZO")
-                        )
+                        cred_uf[uf] += float((row.get("VERBETE_160_OPERACOES_DE_CREDITO") or "0").replace(",", "."))
+                        dep_uf[uf] += sum(float((row.get(k) or "0").replace(",", ".")) for k in verbetes_dep)
         if len(cred_uf) == 27 and all(dep_uf[u] > 0 for u in UFS):
             coletados["i08"] = {uf: cred_uf[uf] / dep_uf[uf] for uf in UFS}
             coletados["referencias"]["i08"] = mes_alvo
@@ -639,12 +621,16 @@ def coletar_fontes_publicas(mes_alvo, municipios, fetcher_json=buscar_json_api, 
     return coletados
 
 
+def validar_mes_alvo(mes_alvo, mensagem="Informe a competência no formato AAAA-MM."):
+    if not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", mes_alvo):
+        raise ValueError(mensagem)
+    return competencia(mes_alvo.replace("-", ""))
+
+
 def atualizar_via_apis(conn, dados, mes_alvo, fetcher=buscar_json_api, fetcher_bytes=buscar_bytes_api,
                        *, coletados=None):
     _, pacote, municipios, ranking, observacoes, detalhes, _, _ = dados
-    if not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", mes_alvo):
-        raise ValueError("Use --competencia no formato AAAA-MM.")
-    periodo = competencia(mes_alvo.replace("-", ""))
+    periodo = validar_mes_alvo(mes_alvo, "Use --competencia no formato AAAA-MM.")
     if periodo <= checar_metodo(pacote):
         raise ValueError("A atualização vale somente depois da edição de referência.")
     if coletados is None:
@@ -782,8 +768,7 @@ def publicar(conn, dados, calculado_em=None, proveniencia=None):
 
 
 def coletar_atualizacao(dados, mes):
-    if not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", mes):
-        raise ValueError("Informe a competência no formato AAAA-MM.")
+    validar_mes_alvo(mes)
     return coletar_fontes_publicas(mes, dados[2])
 
 
@@ -825,7 +810,7 @@ def atualizacao_guiada(conn, dados, mes, calculado_em):
 
 def main():
     parser = argparse.ArgumentParser(description="Gerencia migrações, importação, cálculo e atualização do KREDITA.")
-    parser.add_argument("pasta", nargs="?", default=ROOT, type=Path, help="Pasta com score_kredita.json")
+    parser.add_argument("pasta", nargs="?", default=ROOT / "dados", type=Path, help="Pasta com score_kredita.json")
     modo = parser.add_mutually_exclusive_group()
     modo.add_argument("--validar", action="store_true", help="Valida os arquivos sem publicar")
     modo.add_argument("--prever-recalculo", action="store_true", help="Gera a prévia local sem publicar")
@@ -861,7 +846,7 @@ def main():
     from app import conectar_sqlite
     url = os.environ.get("DATABASE_URL") or str(ROOT / "kredita.db")
 
-    with contextlib.closing(conectar_sqlite(url)) as conn:
+    with conectar_sqlite(url) as conn:
         if args.guiado:
             try:
                 atualizacao_guiada(conn, dados, args.competencia, calculado_em)

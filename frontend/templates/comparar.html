@@ -63,8 +63,7 @@
     <label class="input-label">Competência
       <select data-diferencas>
         {% for data in diferencas %}
-        {% set data_fmt = (data[5:7] ~ '/' ~ data[:4]) if data|length == 7 else data %}
-        <option value="{{ data }}" {% if loop.last %}selected{% endif %}>{{ data_fmt }}</option>
+        <option value="{{ data }}" {% if loop.last %}selected{% endif %}>{{ data|mes_br }}</option>
         {% endfor %}
       </select>
     </label>

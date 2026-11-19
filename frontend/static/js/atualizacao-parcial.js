@@ -77,16 +77,10 @@ function sincronizar() {
     const salvo = salvos.includes(botao.dataset.favorite);
     botao.setAttribute('aria-pressed', String(salvo));
     const estrela = botao.querySelector('[data-estrela]');
-    if (estrela) {
-      estrela.textContent = salvo ? '★' : '☆';
-      const legenda = botao.querySelector('.acao-legenda');
-      if (legenda) legenda.textContent = salvo ? 'Salvo' : 'Favoritar';
-    } else {
-      botao.textContent = salvo ? '★' : '☆';
-    }
+    if (estrela) estrela.textContent = salvo ? '★' : '☆';
+    const legenda = botao.querySelector('.acao-legenda');
+    if (legenda) legenda.textContent = salvo ? 'Salvo' : 'Favoritar';
   }
-  const contador = document.querySelector('[data-count]');
-  if (contador) contador.textContent = lista('comparar').length;
   const info = document.querySelector('#dados-mapa');
   if (!mapa || !info) return;
   const dados = JSON.parse(info.textContent);
@@ -193,6 +187,21 @@ document.addEventListener('click', async evento => {
   for (const aberto of document.querySelectorAll('details.axis-scope[open], details.ranking-triage[open], details.dashboard-extra-filters[open]')) {
     if (!aberto.contains(evento.target)) aberto.open = false;
   }
+  const plot = evento.target.closest('#comparison-history .timeline-plot[data-plot-datas]');
+  if (plot) {
+    const seletor = document.querySelector('[data-diferencas]');
+    if (seletor) {
+      const posicoes = JSON.parse(plot.dataset.plotDatas);
+      const box = plot.getBoundingClientRect();
+      const alvoX = 100 * (evento.clientX - box.left) / box.width;
+      const maisProximo = Object.entries(posicoes).reduce((melhor, atual) =>
+        Math.abs(atual[1] - alvoX) < Math.abs(melhor[1] - alvoX) ? atual : melhor
+      )[0];
+      seletor.value = maisProximo;
+      seletor.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    return;
+  }
   const alvo = evento.target.closest('a, button, [data-ponto]');
   if (!alvo) return;
   const dados = alvo.dataset;
@@ -236,22 +245,6 @@ document.addEventListener('click', async evento => {
     guardar(chaves.favoritos, ids.includes(dados.favorite) ? ids.filter(id => id !== dados.favorite) : [...ids, dados.favorite]);
     sincronizar();
     if (pagina === 'favoritos') atualizar(new URL(location.href), false);
-  }
-  if (dados.moveUp || dados.moveDown) {
-    const alvoId = dados.moveUp || dados.moveDown;
-    let ids = lista('favoritos');
-    if (!ids.length) {
-      ids = [...document.querySelectorAll('[data-move-up]')].map(el => el.dataset.moveUp);
-    }
-    const idx = ids.indexOf(alvoId);
-    const destino = dados.moveUp ? idx - 1 : idx + 1;
-    if (idx !== -1 && destino >= 0 && destino < ids.length) {
-      [ids[idx], ids[destino]] = [ids[destino], ids[idx]];
-      guardar(chaves.favoritos, ids);
-      const url = new URL(location.href);
-      if (url.searchParams.has('favoritos')) url.searchParams.set('favoritos', ids.join(','));
-      atualizar(url, false);
-    }
   }
   if (dados.add || dados.remove) {
     const ids = lista('comparar');
@@ -309,11 +302,6 @@ document.addEventListener('click', async evento => {
     for (const btn of timeline.querySelectorAll('.timeline-point')) {
       btn.setAttribute('aria-pressed', String(btn === alvo));
     }
-    const seletor = document.querySelector('[data-diferencas]');
-    if (seletor && alvo.closest('[data-sobreposto]') && dados.data) {
-      seletor.value = dados.data;
-      seletor.dispatchEvent(new Event('change', { bubbles: true }));
-    }
   }
 });
 
@@ -341,27 +329,10 @@ document.addEventListener('change', evento => {
   }
 });
 
-document.addEventListener('click', evento => {
-  const plot = evento.target.closest('#comparison-history .timeline-plot[data-plot-datas]');
-  const seletor = document.querySelector('[data-diferencas]');
-  if (!plot || !seletor) return;
-  const posicoes = JSON.parse(plot.dataset.plotDatas);
-  const box = plot.getBoundingClientRect();
-  const alvoX = 100 * (evento.clientX - box.left) / box.width;
-  const maisProximo = Object.entries(posicoes).reduce((melhor, atual) =>
-    Math.abs(atual[1] - alvoX) < Math.abs(melhor[1] - alvoX) ? atual : melhor
-  )[0];
-  seletor.value = maisProximo;
-  seletor.dispatchEvent(new Event('change', { bubbles: true }));
-});
 document.addEventListener('keydown', evento => {
   if (evento.key === 'Escape' && menuMobile.matches && menuAberto && !document.querySelector('#comparacao-busca')?.open) {
     ajustarMenu(false);
     document.querySelector('.hamburger')?.focus();
-  }
-  if (evento.target.matches('[data-ponto]') && ['Enter', ' '].includes(evento.key)) {
-    evento.preventDefault();
-    evento.target.dispatchEvent(new MouseEvent('click', { bubbles: true }));
   }
 });
 window.addEventListener('popstate', () => atualizar(new URL(location.href), false));

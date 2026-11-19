@@ -1,6 +1,5 @@
 import csv
 import io
-import json
 import math
 import re
 import unicodedata
@@ -10,7 +9,6 @@ from itertools import combinations
 from urllib.parse import urlencode
 
 from flask import Response, abort, render_template, request
-from werkzeug.exceptions import NotFound
 
 
 PAGINAS = {
@@ -19,6 +17,8 @@ PAGINAS = {
     "guia": "Guia do site", "metodologia": "Metodologia e fontes", "apostas": "Apostas",
 }
 EIXOS = ("Risco", "Capacidade", "Inclusão", "Demografia")
+PORTES = (("small", "Até 20 mil"), ("medium", "Mais de 20 mil até 100 mil"), ("large", "Acima de 100 mil"))
+ORDENS = (("", "Maior score"), ("score-asc", "Menor score"), ("name", "Nome (A–Z)"), ("population", "Maior população"))
 
 
 def numero(valor, casas=1):
@@ -28,7 +28,9 @@ def numero(valor, casas=1):
 
 
 def normalizar(valor):
-    return "".join(c for c in unicodedata.normalize("NFD", valor.lower().strip())
+    if valor is None:
+        return ""
+    return "".join(c for c in unicodedata.normalize("NFD", str(valor).lower().strip())
                    if not unicodedata.combining(c))
 
 
@@ -175,21 +177,35 @@ def codigos_validos(chave):
                               if re.fullmatch(r"[0-9]{7}", c)))
 
 
-def sugestoes(itens):
-    busca = normalizar(request.args.get("busca", "")[:100])
-    encontrados = [item for item in itens if busca and
-                   (busca == item["id"] or busca in normalizar(item["nome"] + " " + item["uf"]))]
+def buscar_sugestoes(itens, texto):
+    busca = normalizar(texto)
+    if not busca:
+        return []
+    encontrados = [item for item in itens if busca == item["id"] or busca in normalizar(item["nome"] + " " + item["uf"])]
     encontrados.sort(key=lambda item: (
         busca not in (item["id"], normalizar(item["nome"])),
         not normalizar(item["nome"]).startswith(busca), normalizar(item["nome"])))
-    return render_template("_sugestoes.html", itens=encontrados[:8], favoritos=codigos_validos("favoritos"),
+    return encontrados[:8]
+
+
+def ordenar_itens(itens, ordem, *, padrao_score=False):
+    if ordem == "name":
+        itens.sort(key=lambda item: (normalizar(item["nome"]), item["position"] or 10**9))
+    elif ordem == "population":
+        itens.sort(key=lambda item: (-(item["populacao"] or 0), item["position"] or 10**9, normalizar(item["nome"])))
+    elif ordem == "score-asc":
+        itens.sort(key=lambda item: (item["score"] if item["score"] is not None else 10**9, item["position"] or 10**9, normalizar(item["nome"])))
+    elif padrao_score:
+        itens.sort(key=lambda item: (-(item["score"] if item["score"] is not None else -1), normalizar(item["nome"])))
+
+
+def sugestoes(itens):
+    encontrados = buscar_sugestoes(itens, request.args.get("busca", "")[:100])
+    return render_template("_sugestoes.html", itens=encontrados, favoritos=codigos_validos("favoritos"),
                            selecionar=request.args.get("selecionar") == "1")
 
 
 def painel(pagina, backend):
-    BACKEND, JUNCAO, LOTE_SCR, RESUMO = backend.BACKEND, backend.JUNCAO, backend.LOTE_SCR, backend.RESUMO
-    conexao, consulta_edicao = backend.conexao, backend.consulta_edicao
-    apostas_api, detalhe_api, historico_api = backend.apostas_api, backend.detalhe_api, backend.historico_api
     if pagina not in PAGINAS:
         abort(404)
     args = request.args
@@ -203,139 +219,116 @@ def painel(pagina, backend):
     comparar = codigos_validos("comparar")[:3]
     contexto = dict(pagina=pagina, paginas=PAGINAS, titulo=PAGINAS[pagina], eixos=EIXOS, ativos=eixos,
                     eixos_url=eixos_url, filtros=filtros, favoritos=favoritos, comparar=comparar,
+                    portes=PORTES, ordens=ORDENS,
+                    score_label="Score geral" if len(eixos) == 4 else "Score dos eixos selecionados",
                     numero=numero, url_pagina=request.path, args=args, grafico=grafico,
                     paginar=lambda n: url_com(pagina=n), exportar=lambda: url_com(exportar="csv"),
                     selecionado=None)
     if pagina == "metodologia":
-        pacote = json.loads((BACKEND / "score_kredita.json").read_text(encoding="utf-8-sig"))
+        pacote = backend.metodologia_pacote()
         contexto.update(indicadores=pacote["indicadores"], pesos=pacote["pesos_finais"], formulas=formulas,
                         frequencias=("Mensal", "Censitária", "Mensal", "Censitária", "Mensal", "Mensal",
                                      "Censitária", "Mensal", "Mensal", "Mensal", "Mensal", "Censitária",
                                      "Anual", "Censitária", "Anual", "Conforme publicação"))
-    if pagina in ("apostas", "index"):
-        try:
-            apostas = apostas_api().get_json()
-        except NotFound:
-            apostas = None
-        contexto["apostas"] = apostas
-    if pagina in ("index", "ranking", "municipio", "favoritos", "comparar"):
-        with conexao() as conn:
-            edicao = consulta_edicao(conn)
-            catalogo = conn.execute(f"SELECT {RESUMO} {JUNCAO} ORDER BY m.nome, m.codigo_ibge",
-                                    (edicao["id"],)).fetchall()
-        catalogo, ranking = classificar(catalogo, eixos)
-        por_codigo = {item["id"]: item for item in catalogo}
-        selecionado = por_codigo.get(args.get("id"))
-        if pagina == "index" and selecionado:
-            filtros["uf"] = selecionado["uf"]
-        itens = recorte(ranking, filtros)
-        encontrados = recorte(catalogo, dict(filtros, uf="", porte="", minimos=[None]*4)) if filtros["busca"] else []
-        busca = normalizar(filtros["busca"])
-        encontrados.sort(key=lambda item: (busca not in (item["id"], normalizar(item["nome"])),
-                                           not normalizar(item["nome"]).startswith(busca), normalizar(item["nome"])))
-        contexto.update(edicao=edicao, selecionado=selecionado, ufs=sorted({item["uf"] for item in catalogo}),
-                        sugestoes=encontrados[:8])
-        if pagina == "ranking":
-            if filtros["ordem"] == "name":
-                itens.sort(key=lambda item: (normalizar(item["nome"]), item["position"]))
-            elif filtros["ordem"] == "population":
-                itens.sort(key=lambda item: (-(item["populacao"] or 0), item["position"]))
-            elif filtros["ordem"] == "score-asc":
-                itens.sort(key=lambda item: (item["score"], item["position"]))
-            paginas = max(1, (len(itens) + 49) // 50)
-            indice = min(paginas, max(1, args.get("pagina", 1, type=int)))
-            contexto.update(itens=itens[(indice - 1)*50:indice*50], total=len(itens),
-                            indice=indice, total_paginas=paginas)
-        if pagina == "index":
-            codigos = [selecionado["id"]] if selecionado else [item["id"] for item in itens]
-            with conexao() as conn:
-                historico = serie_scr(conn,
-                    f"""SELECT s.codigo_ibge, substr(e.competencia,1,7) AS mes, s.score,
-                               s.e1, s.e2, s.e3, s.e4
-                        FROM edicoes_score e JOIN scores_municipais s ON s.edicao_id=e.id
-                        WHERE e.tipo='simulacao_scr' AND e.lote_id=({LOTE_SCR})""", codigos, eixos)
-            contexto.update(total=len(itens), media=mean(i["score"] for i in itens) if itens else None,
-                            lista_uf=[i for i in catalogo if filtros["uf"] and i["uf"] == filtros["uf"]],
-                            mapa=[[i["id"], i["score"]] for i in itens],
-                            exemplos=itens[:5],
-                            perfil_atual=selecionado or ({"eixos": [mean(i["eixos"][e] for i in itens) if e in eixos else None
-                                                             for e in range(4)]} if itens else None),
-                            historico=grafico([("Simulação SCR", historico)], mensal=True))
-            contexto["aposta"] = next((row for row in (apostas or {}).get("territorios", [])
-                                       if row["uf"] == (filtros["uf"] or "BR")), None)
-        if pagina == "municipio":
-            if selecionado is None:
-                abort(404)
-            detalhe = detalhe_api(selecionado["id"]).get_json()
-            historico = historico_api(selecionado["id"]).get_json()
-            contexto.update(detalhe=detalhe, publicado=grafico([("Edições publicadas", pontos(historico, "publicado", eixos, True))]),
-                            scr=grafico([("Simulação SCR", pontos(historico, "simulacao_scr", eixos))], mensal=True),
-                            historico_edicoes=historico["publicado"])
-            edicoes = {row["edicao_id"]: row for row in historico["publicado"]}
-            ids_edicao = list(edicoes)
-            origem = args.get("origem", ids_edicao[-2] if len(ids_edicao) > 1 else None, type=int)
-            destino = args.get("destino", ids_edicao[-1] if ids_edicao else None, type=int)
-            contexto.update(origem=origem, destino=destino)
-            if origem != destino and origem in edicoes and destino in edicoes:
-                with conexao() as conn:
-                    anterior = backend.dados_detalhe(conn, consulta_edicao(conn, origem), selecionado["id"])
-                    posterior = backend.dados_detalhe(conn, consulta_edicao(conn, destino), selecionado["id"])
-                indicadores = {row["indicador"]: row for row in anterior["indicadores"]}
-                mudancas = [(indicadores[row["indicador"]], row) for row in posterior["indicadores"]
-                            if row["indicador"] in indicadores and indicadores[row["indicador"]] != row]
-                contexto.update(mudancas=mudancas, score_atual=score_por_eixos(edicoes[destino]["score"], edicoes[destino]["eixos"], eixos),
-                                score_anterior=score_por_eixos(edicoes[origem]["score"], edicoes[origem]["eixos"], eixos),
-                                contribuicoes=[
-                    (EIXOS[e], (edicoes[destino]["eixos"][e] - edicoes[origem]["eixos"][e])/len(eixos))
-                    for e in eixos if edicoes[destino]["eixos"][e] is not None and edicoes[origem]["eixos"][e] is not None])
-        if pagina in ("favoritos", "comparar"):
-            codigos = favoritos if pagina == "favoritos" else comparar
-            itens = [por_codigo[c] for c in codigos if c in por_codigo]
-            if pagina == "favoritos":
-                contexto["total_favoritos"] = len(itens)
-                if filtros["busca"]:
-                    itens = recorte(itens, dict(filtros, uf="", porte="", minimos=[None]*4))
-                ordem_fav = filtros["ordem"]
-                if ordem_fav == "name":
-                    itens.sort(key=lambda item: (normalizar(item["nome"]), item["position"] or 10**9))
-                elif ordem_fav == "score-asc":
-                    itens.sort(key=lambda item: (item["score"] if item["score"] is not None else 10**9, normalizar(item["nome"])))
-                elif ordem_fav == "population":
-                    itens.sort(key=lambda item: (-(item["populacao"] or 0), normalizar(item["nome"])))
-                else:
-                    itens.sort(key=lambda item: (-(item["score"] if item["score"] is not None else -1), normalizar(item["nome"])))
-            contexto["itens"] = itens
-        if pagina == "comparar":
-            tipo = "publicado" if args.get("serie") == "publicado" else "simulacao_scr"
-            por_porte = args.get("referencia") == "porte"
-            perfis, sobrepostas = [], []
-            historias = {item["id"]: historico_api(item["id"]).get_json() for item in itens}
-            valores = [valor for h in historias.values() for tipo_hist in h if tipo_hist != "codigo_ibge"
-                       for _, valor in pontos(h, tipo_hist, eixos) if valor is not None]
-            escala = (min(valores), max(valores)) if valores else None
-            for item in itens:
-                h = historias[item["id"]]
-                grupo = [i["score"] for i in ranking if (porte(i) == porte(item) and porte(item)
-                         if por_porte else i["uf"] == item["uf"])]
-                ponto = pontos(h, tipo, eixos)
-                sobrepostas.append((item["nome"], list(dict(ponto).items())))
-                perfis.append(dict(item=item, referencia=median(grupo) if grupo else None, grupo=len(grupo),
-                                   publicado=grafico([(item["nome"], pontos(h, "publicado", eixos, True))], escala=escala),
-                                   scr=grafico([(item["nome"], pontos(h, "simulacao_scr", eixos))], mensal=True, escala=escala)))
-            diferencas = {}
-            for data in sorted({data for _, serie in sobrepostas for data, _ in serie}):
-                valores_mes = [(nome, dict(serie).get(data)) for nome, serie in sobrepostas]
-                pares = [
-                    f"{nome} − {outro_nome} ({valor - outro_valor:+.1f} pontos)".replace(".", ",")
-                    for (nome, valor), (outro_nome, outro_valor) in combinations(valores_mes, 2)
-                    if valor is not None and outro_valor is not None
-                ]
-                diferencas[data] = {"valores": valores_mes, "pares": pares}
-            contexto.update(perfis=perfis, diferencas=diferencas,
-                            sobreposto=grafico(sobrepostas, mensal=tipo != "publicado")
-                            if len(sobrepostas) >= 2 else None)
-        if args.get("exportar") == "csv" and pagina in ("index", "ranking", "favoritos", "comparar"):
-            return csv_municipios(pagina, itens)
+    if pagina in ("apostas", "index", "ranking", "municipio", "favoritos", "comparar"):
+        with backend.conexao() as conn:
+            apostas = backend.dados_apostas(conn) if pagina in ("apostas", "index") else None
+            if pagina in ("apostas", "index"):
+                contexto["apostas"] = apostas
+            if pagina in ("index", "ranking", "municipio", "favoritos", "comparar"):
+                edicao = backend.consulta_edicao(conn)
+                catalogo = conn.execute(f"SELECT {backend.RESUMO} {backend.JUNCAO} ORDER BY m.nome, m.codigo_ibge",
+                                        (edicao["id"],)).fetchall()
+                catalogo, ranking = classificar(catalogo, eixos)
+                por_codigo = {item["id"]: item for item in catalogo}
+                selecionado = por_codigo.get(args.get("id"))
+                if pagina == "index" and selecionado:
+                    filtros["uf"] = selecionado["uf"]
+                itens = recorte(ranking, filtros)
+                contexto.update(edicao=edicao, selecionado=selecionado, ufs=sorted({item["uf"] for item in catalogo}),
+                                sugestoes=buscar_sugestoes(catalogo, filtros["busca"]))
+                if pagina == "ranking":
+                    ordenar_itens(itens, filtros["ordem"])
+                    paginas = max(1, (len(itens) + 49) // 50)
+                    indice = min(paginas, max(1, args.get("pagina", 1, type=int)))
+                    contexto.update(itens=itens[(indice - 1)*50:indice*50], total=len(itens),
+                                    indice=indice, total_paginas=paginas)
+                if pagina == "index":
+                    codigos = [selecionado["id"]] if selecionado else [item["id"] for item in itens]
+                    historico = serie_scr(conn, backend.CONSULTA_SCR, codigos, eixos)
+                    contexto.update(total=len(itens), media=mean(i["score"] for i in itens) if itens else None,
+                                    lista_uf=[i for i in catalogo if filtros["uf"] and i["uf"] == filtros["uf"]],
+                                    mapa=[[i["id"], i["score"]] for i in itens],
+                                    exemplos=itens[:5],
+                                    perfil_atual=selecionado or ({"eixos": [mean(i["eixos"][e] for i in itens) if e in eixos else None
+                                                                     for e in range(4)]} if itens else None),
+                                    historico=grafico([("Simulação SCR", historico)], mensal=True),
+                                    aposta=next((row for row in (apostas or {}).get("territorios", [])
+                                                 if row["uf"] == (filtros["uf"] or "BR")), None))
+                if pagina == "municipio":
+                    if selecionado is None:
+                        abort(404)
+                    detalhe = backend.dados_detalhe(conn, edicao, selecionado["id"])
+                    historico = backend.dados_historico(conn, selecionado["id"])
+                    contexto.update(detalhe=detalhe, publicado=grafico([("Edições publicadas", pontos(historico, "publicado", eixos, True))]),
+                                    scr=grafico([("Simulação SCR", pontos(historico, "simulacao_scr", eixos))], mensal=True),
+                                    historico_edicoes=historico["publicado"])
+                    edicoes = {row["edicao_id"]: row for row in historico["publicado"]}
+                    ids_edicao = list(edicoes)
+                    origem = args.get("origem", ids_edicao[-2] if len(ids_edicao) > 1 else None, type=int)
+                    destino = args.get("destino", ids_edicao[-1] if ids_edicao else None, type=int)
+                    contexto.update(origem=origem, destino=destino)
+                    if origem != destino and origem in edicoes and destino in edicoes:
+                        anterior = backend.dados_detalhe(conn, backend.consulta_edicao(conn, origem), selecionado["id"])
+                        posterior = backend.dados_detalhe(conn, backend.consulta_edicao(conn, destino), selecionado["id"])
+                        indicadores = {row["indicador"]: row for row in anterior["indicadores"]}
+                        mudancas = [(indicadores[row["indicador"]], row) for row in posterior["indicadores"]
+                                    if row["indicador"] in indicadores and indicadores[row["indicador"]] != row]
+                        contexto.update(mudancas=mudancas, score_atual=score_por_eixos(edicoes[destino]["score"], edicoes[destino]["eixos"], eixos),
+                                        score_anterior=score_por_eixos(edicoes[origem]["score"], edicoes[origem]["eixos"], eixos),
+                                        contribuicoes=[
+                            (EIXOS[e], (edicoes[destino]["eixos"][e] - edicoes[origem]["eixos"][e])/len(eixos))
+                            for e in eixos if edicoes[destino]["eixos"][e] is not None and edicoes[origem]["eixos"][e] is not None])
+                if pagina in ("favoritos", "comparar"):
+                    codigos = favoritos if pagina == "favoritos" else comparar
+                    itens = [por_codigo[c] for c in codigos if c in por_codigo]
+                    if pagina == "favoritos":
+                        contexto["total_favoritos"] = len(itens)
+                        if filtros["busca"]:
+                            itens = recorte(itens, dict(filtros, uf="", porte="", minimos=[None]*4))
+                        ordenar_itens(itens, filtros["ordem"], padrao_score=True)
+                    contexto["itens"] = itens
+                if pagina == "comparar":
+                    tipo = "publicado" if args.get("serie") == "publicado" else "simulacao_scr"
+                    por_porte = args.get("referencia") == "porte"
+                    perfis, sobrepostas = [], []
+                    historias = {item["id"]: backend.dados_historico(conn, item["id"]) for item in itens}
+                    valores = [valor for h in historias.values() for tipo_hist in h if tipo_hist != "codigo_ibge"
+                               for _, valor in pontos(h, tipo_hist, eixos) if valor is not None]
+                    escala = (min(valores), max(valores)) if valores else None
+                    for item in itens:
+                        h = historias[item["id"]]
+                        grupo = [i["score"] for i in ranking if (porte(i) == porte(item) and porte(item)
+                                 if por_porte else i["uf"] == item["uf"])]
+                        ponto = pontos(h, tipo, eixos)
+                        sobrepostas.append((item["nome"], list(dict(ponto).items())))
+                        perfis.append(dict(item=item, referencia=median(grupo) if grupo else None, grupo=len(grupo),
+                                           publicado=grafico([(item["nome"], pontos(h, "publicado", eixos, True))], escala=escala),
+                                           scr=grafico([(item["nome"], pontos(h, "simulacao_scr", eixos))], mensal=True, escala=escala)))
+                    diferencas = {}
+                    for data in sorted({data for _, serie in sobrepostas for data, _ in serie}):
+                        valores_mes = [(nome, dict(serie).get(data)) for nome, serie in sobrepostas]
+                        pares = [
+                            f"{nome} − {outro_nome} ({valor - outro_valor:+.1f} pontos)".replace(".", ",")
+                            for (nome, valor), (outro_nome, outro_valor) in combinations(valores_mes, 2)
+                            if valor is not None and outro_valor is not None
+                        ]
+                        diferencas[data] = {"valores": valores_mes, "pares": pares}
+                    contexto.update(perfis=perfis, diferencas=diferencas,
+                                    sobreposto=grafico(sobrepostas, mensal=tipo != "publicado")
+                                    if len(sobrepostas) >= 2 else None)
+                if args.get("exportar") == "csv" and pagina in ("index", "ranking", "favoritos", "comparar"):
+                    return csv_municipios(pagina, itens)
     parcial = request.headers.get("X-Kredita-Parcial")
     response = Response(render_template(f"{pagina}.html", parcial=bool(parcial), **contexto))
     response.cache_control.no_cache = True

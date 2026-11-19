@@ -27,7 +27,7 @@ function outline(geometry) {
   if (!geometry || !['Polygon', 'MultiPolygon'].includes(geometry.type)) return '';
   const polygons = geometry.type === 'Polygon' ? [geometry.coordinates] : geometry.coordinates;
   return polygons.flatMap(polygon => polygon.map(ring =>
-    'M' + ring.map(([x, y]) => x.toFixed(4) + ',' + (-y).toFixed(4)).join('L') + 'Z'
+    'M' + ring.map(([x, y]) => x.toFixed(3) + ',' + (-y).toFixed(3)).join('L') + 'Z'
   )).join('');
 }
 

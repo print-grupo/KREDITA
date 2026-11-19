@@ -4,11 +4,11 @@ import os
 import re
 import sqlite3
 import sys
-import unicodedata
+from functools import lru_cache
 from pathlib import Path
 
 from flask import Blueprint, Flask, abort, current_app, jsonify, redirect, request, send_from_directory, url_for
-from consultas import painel, sugestoes
+from consultas import normalizar, painel, sugestoes
 
 site = Blueprint("kredita_site", __name__)
 BACKEND = Path(__file__).resolve().parent
@@ -24,12 +24,10 @@ LOTE_SCR = """SELECT publicado.lote_id FROM edicoes_score publicado
                   WHERE simulacao.tipo = 'simulacao_scr' AND simulacao.lote_id = publicado.lote_id
               )
               ORDER BY publicado.competencia DESC, publicado.id DESC LIMIT 1"""
-
-
-def _sem_acento(texto):
-    if texto is None:
-        return ""
-    return "".join(c for c in unicodedata.normalize("NFD", str(texto).lower()) if not unicodedata.combining(c))
+CONSULTA_SCR = f"""SELECT s.codigo_ibge, substr(e.competencia, 1, 7) AS mes, s.score,
+                          s.e1, s.e2, s.e3, s.e4
+                   FROM edicoes_score e JOIN scores_municipais s ON s.edicao_id = e.id
+                   WHERE e.tipo = 'simulacao_scr' AND e.lote_id = ({LOTE_SCR})"""
 
 
 def _dict_row(cursor, row):
@@ -68,15 +66,6 @@ class ConexaoSQLite(sqlite3.Connection):
             else:
                 self.commit()
 
-    def execute(self, sql, parameters=()):
-        if not parameters and ";" in sql.strip().rstrip(";"):
-            cur = self.cursor()
-            for trecho in sql.split(";"):
-                if trecho.strip():
-                    cur.execute(trecho)
-            return cur
-        return super().execute(sql, parameters)
-
 
 def conectar_sqlite(url=None, *, como_dict=False):
     alvo = url if url is not None else (
@@ -90,7 +79,7 @@ def conectar_sqlite(url=None, *, como_dict=False):
     conn.execute("PRAGMA foreign_keys = ON")
     conn.execute("PRAGMA journal_mode = WAL")
     conn.execute("PRAGMA synchronous = NORMAL")
-    conn.create_function("sem_acento", 1, _sem_acento)
+    conn.create_function("sem_acento", 1, normalizar)
     if como_dict:
         conn.row_factory = _dict_row
     return conn
@@ -150,7 +139,8 @@ def arquivos_site(name="index.html"):
         return painel(name.removesuffix(".html"), sys.modules[__name__])
     if not re.fullmatch(r"[a-z-]+\.(css|js|geojson|png)", name):
         abort(404)
-    return send_from_directory(SITE, name)
+    pastas = {"css": "css", "js": "js", "geojson": "mapas", "png": "img"}
+    return send_from_directory(SITE / "static" / pastas[name.rsplit(".", 1)[1]], name)
 
 
 @site.get("/site/sugestoes")
@@ -175,12 +165,7 @@ def catalogo():
         if historico_apenas or request.args.get("simulacao") == "1":
             por_codigo = {item["id"]: {} for item in items}
             eixos_por_codigo = {item["id"]: {} for item in items}
-            for row in conn.execute(
-                f"""SELECT s.codigo_ibge, substr(e.competencia, 1, 7) AS mes, s.score,
-                          s.e1, s.e2, s.e3, s.e4
-                   FROM edicoes_score e JOIN scores_municipais s ON s.edicao_id = e.id
-                   WHERE e.tipo = 'simulacao_scr' AND e.lote_id = ({LOTE_SCR})""",
-            ):
+            for row in conn.execute(CONSULTA_SCR):
                 por_codigo[row["codigo_ibge"]][row["mes"]] = row["score"]
                 eixos_por_codigo[row["codigo_ibge"]][row["mes"]] = row["eixos"]
             if historico_apenas:
@@ -196,29 +181,41 @@ def catalogo():
     return jsonify(edicao=edicao, municipios=items)
 
 
+def dados_apostas(conn):
+    try:
+        estudo = conn.execute(
+            """SELECT id, estudo, inicio, fim, metrica, unidade, fonte
+               FROM estudos_apostas ORDER BY fim DESC, id DESC LIMIT 1"""
+        ).fetchone()
+    except sqlite3.OperationalError:
+        return None
+    if estudo is None:
+        return None
+    territorios = conn.execute(
+        """SELECT uf, valor, margem_pp, populacao_estimada FROM estimativas_apostas
+           WHERE estudo_id = ? ORDER BY uf""", (estudo["id"],)
+    ).fetchall()
+    return dict(**estudo, territorios=territorios)
+
+
 @site.get("/api/apostas")
 def apostas_api():
     with conexao() as conn:
-        try:
-            estudo = conn.execute(
-                """SELECT id, estudo, inicio, fim, metrica, unidade, fonte
-                   FROM estudos_apostas ORDER BY fim DESC, id DESC LIMIT 1"""
-            ).fetchone()
-        except sqlite3.OperationalError:
-            estudo = None
-        if estudo is None:
-            abort(404, description="Nenhum estudo de apostas foi carregado.")
-        territorios = conn.execute(
-            """SELECT uf, valor, margem_pp, populacao_estimada FROM estimativas_apostas
-               WHERE estudo_id = ? ORDER BY uf""", (estudo["id"],)
-        ).fetchall()
-    return jsonify(**estudo, territorios=territorios)
+        dados = dados_apostas(conn)
+    if dados is None:
+        abort(404, description="Nenhum estudo de apostas foi carregado.")
+    return jsonify(**dados)
+
+
+@lru_cache(maxsize=1)
+def metodologia_pacote():
+    pacote = json.loads((BACKEND / "dados" / "score_kredita.json").read_text(encoding="utf-8-sig"))
+    return {"indicadores": pacote["indicadores"], "pesos_finais": pacote["pesos_finais"]}
 
 
 @site.get("/api/metodologia")
 def metodologia_api():
-    pacote = json.loads((BACKEND / "score_kredita.json").read_text(encoding="utf-8-sig"))
-    return jsonify(indicadores=pacote["indicadores"])
+    return jsonify(indicadores=metodologia_pacote()["indicadores"])
 
 
 @site.get("/api/ranking")
@@ -226,7 +223,7 @@ def ranking_api():
     page = max(1, min(1_000_000, request.args.get("pagina", 1, type=int)))
     size = max(1, min(100, request.args.get("limite", 50, type=int)))
     uf = request.args.get("uf", "").upper()
-    busca = _sem_acento(request.args.get("busca", "").strip()[:100])
+    busca = normalizar(request.args.get("busca", "").strip()[:100])
     filtro = JUNCAO + """ AND s.score IS NOT NULL
         AND (? = '' OR m.uf = ?)
         AND (? = '' OR instr(sem_acento(m.nome || ' ' || m.uf), ?) > 0
@@ -273,30 +270,35 @@ def dados_detalhe(conn, edicao, codigo):
     return dict(edicao=edicao, municipio=item, indicadores=indicadores)
 
 
+def dados_historico(conn, codigo):
+    if conn.execute("SELECT 1 FROM municipios WHERE codigo_ibge = ?", (codigo,)).fetchone() is None:
+        abort(404, description="Município não encontrado.")
+    rows = conn.execute(
+        f"""SELECT e.id AS edicao_id, e.tipo, substr(e.competencia, 1, 7) AS competencia,
+                  e.versao, e.publicado_em, s.score,
+                  s.e1, s.e2, s.e3, s.e4
+           FROM edicoes_score e LEFT JOIN scores_municipais s
+                ON s.edicao_id = e.id AND s.codigo_ibge = ?
+           WHERE e.tipo = 'publicado' OR e.lote_id = ({LOTE_SCR})
+           ORDER BY e.competencia, e.id""",
+        (codigo,),
+    ).fetchall()
+    series = {tipo: [] for tipo in SERIES}
+    for row in rows:
+        series[row.pop("tipo")].append(row)
+    return dict(codigo_ibge=codigo, **series)
+
+
 @site.get("/api/municipios/<codigo>/historico")
 def historico_api(codigo):
     codigo_valido(codigo)
     with conexao() as conn:
         consulta_edicao(conn)
-        if conn.execute("SELECT 1 FROM municipios WHERE codigo_ibge = ?", (codigo,)).fetchone() is None:
-            abort(404, description="Município não encontrado.")
-        rows = conn.execute(
-            f"""SELECT e.id AS edicao_id, e.tipo, substr(e.competencia, 1, 7) AS competencia,
-                      e.versao, e.publicado_em, s.score,
-                      s.e1, s.e2, s.e3, s.e4
-               FROM edicoes_score e LEFT JOIN scores_municipais s
-                    ON s.edicao_id = e.id AND s.codigo_ibge = ?
-               WHERE e.tipo = 'publicado' OR e.lote_id = ({LOTE_SCR})
-               ORDER BY e.competencia, e.id""",
-            (codigo,),
-        ).fetchall()
-    series = {tipo: [] for tipo in SERIES}
-    for row in rows:
-        series[row.pop("tipo")].append(row)
-    return jsonify(codigo_ibge=codigo, **series)
+        return jsonify(**dados_historico(conn, codigo))
 
 
 app = Flask(__name__, template_folder=str(SITE / "templates"))
+app.jinja_env.filters["mes_br"] = lambda d: f"{d[5:7]}/{d[:4]}" if isinstance(d, str) and len(d) == 7 else d
 app.register_blueprint(site)
 
 
@@ -311,14 +313,13 @@ def municipio_detalhe(cod_ibge):
 
 
 def garantir_banco():
-    from importar_kredita import ROOT, importar_apostas, ler_exportacao, preparar_banco, publicar
+    from importar_kredita import ROOT, carregar_apostas_pendentes, ler_exportacao, preparar_banco, publicar
 
     with conectar_sqlite() as conn:
         preparar_banco(conn)
-        if conn.execute("SELECT 1 FROM edicoes_score LIMIT 1").fetchone():
-            return
-        publicar(conn, ler_exportacao(ROOT))
-        importar_apostas(conn)
+        if not conn.execute("SELECT 1 FROM edicoes_score WHERE tipo='publicado' LIMIT 1").fetchone():
+            publicar(conn, ler_exportacao(ROOT / "dados"))
+        carregar_apostas_pendentes(conn)
 
 
 if __name__ == "__main__":

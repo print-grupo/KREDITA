@@ -140,4 +140,14 @@ Uma tarefa ou User Story será considerada concluída quando:
 
 ## Executar o painel
 
-O painel Flask e a carga PostgreSQL podem ser executados com Docker Compose ou localmente. Veja as instruções em [docs/operacao.md](docs/operacao.md).
+Na raiz do repositório:
+
+```sh
+docker compose up -d --build
+```
+
+Abra [o painel](http://127.0.0.1:8788/site/). O SQLite é criado no volume Docker na primeira execução.
+
+- `backend/` reúne Flask, importador, dados de carga, migrações e testes.
+- `frontend/` reúne os templates Jinja e os arquivos estáticos, separados por tipo.
+- `docs/` reúne [operação](docs/operacao.md), [metodologia](docs/documentacao-dados/score.md), [convenções do Git](docs/git.md) e [Scrum](docs/scrum/README.md).

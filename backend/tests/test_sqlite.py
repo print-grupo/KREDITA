@@ -8,7 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from importar_kredita import (
-    BASE,
+    ROOT,
     atualizar_via_apis,
     atualizacao_guiada,
     checar_metodo,
@@ -19,8 +19,6 @@ from importar_kredita import (
     preparar,
     publicar,
 )
-
-ROOT = Path(__file__).resolve().parents[1]
 
 
 class AtualizacaoGuiadaTest(unittest.TestCase):
@@ -54,7 +52,7 @@ class AtualizacaoGuiadaTest(unittest.TestCase):
 class ExportacaoEReaproveitamentoTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.dados = ler_exportacao(BASE)
+        cls.dados = ler_exportacao(ROOT / "dados")
 
     def test_exportacao_e_atualizacao_apis(self):
         _, _, municipios, ranking, observacoes, detalhes, _, historico = self.dados
@@ -151,7 +149,6 @@ class ExportacaoEReaproveitamentoTest(unittest.TestCase):
 
 class SQLiteTest(unittest.TestCase):
     def test_publicacao_e_api(self):
-        import contextlib
         import sqlite3
 
         from app import app, conectar_sqlite
@@ -164,9 +161,10 @@ class SQLiteTest(unittest.TestCase):
         self.addCleanup(app.config.update, config_anterior)
         app.config.update(TESTING=True, DATABASE_URL=url)
         client = app.test_client()
-        dados = ler_exportacao(ROOT)
-        with contextlib.closing(conectar_sqlite(url)) as conn:
-            conn.execute((ROOT / "migrations/001_sqlite.sql").read_text(encoding="utf8"))
+        dados = ler_exportacao(ROOT / "dados")
+        with conectar_sqlite(url) as conn:
+            esquema = (ROOT / "banco_de_dados/001_sqlite.sql").read_text(encoding="utf8")
+            conn.executescript(esquema.split("CREATE TRIGGER", 1)[0])
             conn.execute("INSERT INTO municipios VALUES ('0000001', 'Teste', 'SP', 'Sudeste')")
             preparar_banco(conn)
             preparar_banco(conn)

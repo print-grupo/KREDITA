@@ -16,14 +16,14 @@
     <label class="input-label">População
       <select name="porte">
         <option value="">Todos os portes</option>
-        {% for chave, rotulo in [('small','Até 20 mil'),('medium','Mais de 20 mil até 100 mil'),('large','Acima de 100 mil')] %}
+        {% for chave, rotulo in portes %}
         <option value="{{ chave }}" {% if filtros.porte == chave %}selected{% endif %}>{{ rotulo }}</option>
         {% endfor %}
       </select>
     </label>
     <label class="input-label">Ordenar por
       <select name="ordem">
-        {% for valor, nome in [('', 'Maior score'),('score-asc','Menor score'),('name','Nome (A–Z)'),('population','Maior população')] %}
+        {% for valor, nome in ordens %}
         <option value="{{ valor }}" {% if filtros.ordem == valor %}selected{% endif %}>{{ nome }}</option>
         {% endfor %}
       </select>
@@ -65,7 +65,7 @@
       <button class="button button-outline" type="button" data-share>Compartilhar recorte</button>
     </div>
   </div>
-  {{ tabela(itens, favoritos, 'Score geral' if ativos|length == 4 else 'Score dos eixos selecionados', numero) }}
+  {{ tabela(itens, favoritos, score_label, numero) }}
   <div class="detail-actions" style="margin-top:14px;margin-bottom:0">
     {% if indice > 1 %}<a class="button button-outline" data-pagina="{{ indice-1 }}" href="{{ paginar(indice-1) }}">Anterior</a>{% else %}<button class="button button-outline" type="button" disabled>Anterior</button>{% endif %}
     <form data-parcial method="get" class="actions" aria-label="Ir para página">

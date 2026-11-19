@@ -1,2 +1,2 @@
 backend/*.csv -text
-backend/*.json -text
+backend/dados/*.json -text

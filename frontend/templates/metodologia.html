@@ -31,11 +31,15 @@
 <section class="panel copy-panel bets-context">
   <h2>Indicadores e fontes</h2>
   <div class="ranking-table-wrap" tabindex="0" aria-label="Indicadores do score">
-    <table class="ranking-table">
+    <table class="ranking-table method-indicators" role="table">
       <thead><tr><th>Indicador</th><th>Fonte</th><th>Unidade</th><th>Peso no score</th><th>Periodicidade</th></tr></thead>
       <tbody>
         {% for ind in indicadores %}
-        <tr><th scope="row">{{ ind.id|upper }} · {{ ind.nome }}</th><td>{{ ind.fonte }}</td><td>{{ ind.unidade }}</td><td>{{ numero(pesos.get(ind.id,0)*100,2) }}%</td><td>{{ frequencias[loop.index0] }}</td></tr>
+        <tr><th scope="row">{{ ind.id|upper }} · {{ ind.nome }}</th>
+          <td class="rotulo-movel" data-rotulo="Fonte">{{ ind.fonte }}</td>
+          <td class="rotulo-movel" data-rotulo="Unidade">{{ ind.unidade }}</td>
+          <td class="rotulo-movel" data-rotulo="Peso no score">{{ numero(pesos.get(ind.id,0)*100,2) }}%</td>
+          <td class="rotulo-movel" data-rotulo="Periodicidade">{{ frequencias[loop.index0] }}</td></tr>
         {% endfor %}
       </tbody>
     </table>

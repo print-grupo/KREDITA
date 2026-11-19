@@ -16,7 +16,7 @@
     </label>
     <label class="input-label">Ordenar por
       <select name="ordem">
-        {% for valor, nome in [('', 'Maior score'), ('score-asc', 'Menor score'), ('name', 'Nome (A–Z)'), ('population', 'Maior população')] %}
+        {% for valor, nome in ordens %}
         <option value="{{ valor }}" {% if filtros.ordem == valor %}selected{% endif %}>{{ nome }}</option>
         {% endfor %}
       </select>
@@ -29,7 +29,7 @@
 {% endif %}
 {% if itens %}
 <section class="panel ranking-panel" aria-label="Municípios favoritos">
-  {{ tabela(itens, favoritos, 'Score geral' if ativos|length == 4 else 'Score dos eixos selecionados', numero) }}
+  {{ tabela(itens, favoritos, score_label, numero) }}
 </section>
 {% elif total_favoritos %}
 <p class="panel copy-panel">Nenhum município favorito corresponde à busca.</p>

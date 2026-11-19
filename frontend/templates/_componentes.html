@@ -58,27 +58,6 @@
 </details>
 {% endmacro %}
 
-{% macro seletores(filtros, ufs, eixos, ativos) %}
-<label class="input-label">Buscar município
-  <input type="search" name="busca" value="{{ filtros.busca }}" placeholder="Digite o nome ou código IBGE" autocomplete="off">
-</label>
-<label class="input-label">Estado (UF)
-  <select name="uf">
-    <option value="">Todos os estados</option>
-    {% for uf in ufs %}<option value="{{ uf }}" {% if filtros.uf == uf %}selected{% endif %}>{{ uf }}</option>{% endfor %}
-  </select>
-</label>
-<label class="input-label">População
-  <select name="porte">
-    <option value="">Todos os portes</option>
-    {% for chave, rotulo in [('small','Até 20 mil'),('medium','Mais de 20 mil até 100 mil'),('large','Acima de 100 mil')] %}
-    <option value="{{ chave }}" {% if filtros.porte == chave %}selected{% endif %}>{{ rotulo }}</option>
-    {% endfor %}
-  </select>
-</label>
-{{ seletor_eixos(eixos, ativos) }}
-{% endmacro %}
-
 {% macro perfil(item, eixos, ativos, numero) %}
 {% if item %}
 <div class="axis-bars">
@@ -103,7 +82,7 @@
 <div class="score-timeline {{ 'comparison-timeline' if multi }}" data-timeline>
   {% if not multi %}
   <div class="timeline-reading" aria-live="polite">
-    <span data-leitura>{{ (ultimo_ponto[0][5:7] ~ '/' ~ ultimo_ponto[0][:4]) if ultimo_ponto and ultimo_ponto[0]|length == 7 else (ultimo_ponto[0] if ultimo_ponto else 'Selecione um ponto no gráfico') }}</span>
+    <span data-leitura>{{ ultimo_ponto[0]|mes_br if ultimo_ponto else 'Selecione um ponto no gráfico' }}</span>
     <strong data-leitura-score>{{ numero(ultimo_ponto[1]) if ultimo_ponto else '—' }} <small>pts</small></strong>
   </div>
   {% endif %}
@@ -134,16 +113,14 @@
       {% endfor %}
       {% else %}
       {% for data, valor, x, y in ultima_linha.vertices %}
-      {% set data_fmt = (data[5:7] ~ '/' ~ data[:4]) if data|length == 7 else data %}
-      <button class="timeline-point" type="button" style="--x:{{ '%.2f'|format(x) }}%;--y:{{ '%.2f'|format(y) }}%" data-ponto="{{ data_fmt }}" data-score="{{ numero(valor) }}" data-data="{{ data }}" aria-pressed="{{ 'true' if loop.last else 'false' }}" aria-label="{{ ultima_linha.nome }} {{ data_fmt }}: {{ numero(valor) }} pontos"></button>
+      <button class="timeline-point" type="button" style="--x:{{ '%.2f'|format(x) }}%;--y:{{ '%.2f'|format(y) }}%" data-ponto="{{ data|mes_br }}" data-score="{{ numero(valor) }}" data-data="{{ data }}" aria-pressed="{{ 'true' if loop.last else 'false' }}" aria-label="{{ ultima_linha.nome }} {{ data|mes_br }}: {{ numero(valor) }} pontos"></button>
       {% endfor %}
       {% endif %}
     </div>
   </div>
   <div class="timeline-dates" aria-hidden="true">
     {% for data, x in dados.marcas_datas %}
-    {% set data_fmt = (data[5:7] ~ '/' ~ data[:4]) if data|length == 7 else data %}
-    <span style="--x:{{ '%.2f'|format(x) }}%">{{ data_fmt }}</span>
+    <span style="--x:{{ '%.2f'|format(x) }}%">{{ data|mes_br }}</span>
     {% endfor %}
   </div>
   {% if tabela %}
@@ -155,8 +132,7 @@
         <tbody>
           {% for linha in dados.linhas %}
           {% for data, valor, x, y in linha.vertices %}
-          {% set data_fmt = (data[5:7] ~ '/' ~ data[:4]) if data|length == 7 else data %}
-          <tr>{% if dados.linhas|length > 1 %}<td>{{ linha.nome }}</td>{% endif %}<th scope="row">{{ data_fmt }}</th><td>{{ numero(valor) }}</td></tr>
+          <tr>{% if dados.linhas|length > 1 %}<td>{{ linha.nome }}</td>{% endif %}<th scope="row">{{ data|mes_br }}</th><td>{{ numero(valor) }}</td></tr>
           {% endfor %}
           {% endfor %}
         </tbody>

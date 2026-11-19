@@ -15,7 +15,7 @@
 
 <div class="metric-grid selection-metrics">
   <article class="metric-card primary-metric">
-    <div class="metric-top">{{ 'Score geral' if ativos|length == 4 else 'Score dos eixos selecionados' }}</div>
+    <div class="metric-top">{{ score_label }}</div>
     <div class="metric-value">{{ numero(selecionado.score) if selecionado.score is not none else 'Indisponível' }}{% if selecionado.score is not none %} <small>/ 100</small>{% endif %}</div>
     <div class="metric-note">Score sem cofator {{ numero(detalhe.municipio.score_sem_cofator) }} · M {{ numero(detalhe.municipio.m) }} · φ {{ numero(detalhe.municipio.cofator, 5) }}</div>
   </article>

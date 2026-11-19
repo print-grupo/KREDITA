@@ -8,9 +8,10 @@ RUN pip install --no-cache-dir -r requirements.txt gunicorn==23.0.0 \
     && useradd --system --no-create-home kredita \
     && mkdir -p /app/data && chown kredita:kredita /app/data
 
-COPY backend/*.py backend/*.json ./
-COPY backend/migrations/ migrations/
-COPY frontend/ /app/frontend/
+COPY backend/app.py backend/consultas.py backend/importar_kredita.py ./
+COPY backend/dados/ dados/
+COPY backend/banco_de_dados/ banco_de_dados/
+COPY --chown=kredita:kredita frontend/ /app/frontend/
 
 USER kredita
 EXPOSE 8080

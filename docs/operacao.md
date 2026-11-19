@@ -1,6 +1,6 @@
 # Kredita com SQLite
 
-O `importar_kredita.py` cria o esquema SQLite em modo WAL (`kredita.db`), valida `score_kredita.json`, publica a edição, a série histórica SCR e os dados de apostas e também pode atualizar indicadores via APIs públicas. O `app.py` (Flask + Jinja) serve o site e a API.
+O `importar_kredita.py` cria o esquema SQLite em modo WAL (`kredita.db`), valida `backend/dados/score_kredita.json` e lê as estimativas em `backend/dados/apostas.json`, publica a edição, a série histórica SCR e os dados de apostas e também pode atualizar indicadores via APIs públicas. O `app.py` (Flask + Jinja) serve o site e a API.
 
 ## Rodar localmente
 
@@ -47,6 +47,8 @@ Para publicar uma nova pasta exportada com reaproveitamento de até 3 competênc
 python importar_kredita.py caminho-da-nova-edicao --prever-recalculo
 python importar_kredita.py caminho-da-nova-edicao --publicar-recalculado
 ```
+
+Os scripts SQL ficam em `backend/banco_de_dados/` e são aplicados na ordem dos nomes.
 
 ## API
 
