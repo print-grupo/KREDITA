@@ -291,6 +291,21 @@ def painel(pagina, backend):
         if pagina in ("favoritos", "comparar"):
             codigos = favoritos if pagina == "favoritos" else comparar
             itens = [por_codigo[c] for c in codigos if c in por_codigo]
+            if pagina == "favoritos":
+                contexto["total_favoritos"] = len(itens)
+                if filtros["busca"]:
+                    itens = recorte(itens, dict(filtros, uf="", porte="", minimos=[None]*4))
+                ordem_fav = filtros["ordem"]
+                if ordem_fav == "position":
+                    itens.sort(key=lambda item: (item["position"] or 10**9, normalizar(item["nome"])))
+                elif ordem_fav == "name":
+                    itens.sort(key=lambda item: (normalizar(item["nome"]), item["position"] or 10**9))
+                elif ordem_fav == "score":
+                    itens.sort(key=lambda item: (-(item["score"] if item["score"] is not None else -1), normalizar(item["nome"])))
+                elif ordem_fav == "score-asc":
+                    itens.sort(key=lambda item: (item["score"] if item["score"] is not None else 10**9, normalizar(item["nome"])))
+                elif ordem_fav == "population":
+                    itens.sort(key=lambda item: (-(item["populacao"] or 0), normalizar(item["nome"])))
             contexto["itens"] = itens
         if pagina == "comparar":
             tipo = "publicado" if args.get("serie") == "publicado" else "simulacao_scr"

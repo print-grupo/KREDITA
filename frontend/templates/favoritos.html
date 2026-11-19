@@ -3,21 +3,38 @@
 {% block conteudo %}
 {{ cabecalho('Favoritos', 'Municípios salvos neste navegador.') }}
 <div class="detail-actions">
-  <div class="actions">
-    <a class="button button-outline" href="/site/ranking.html">Abrir ranking</a>
-    <form data-parcial method="get">{{ seletor_eixos(eixos, ativos) }}</form>
-  </div>
+  <a class="button button-outline" href="/site/ranking.html">Abrir ranking</a>
   {% if itens %}
   <a class="button button-primary" data-exportar href="{{ exportar() }}">Exportar CSV</a>
   {% endif %}
 </div>
+{% if total_favoritos %}
+<section class="panel ranking-panel" aria-label="Filtros de favoritos" style="margin-bottom:16px">
+  <form data-parcial data-auto-submit method="get" class="rank-filters">
+    <label class="input-label">Buscar nos favoritos
+      <input type="search" name="busca" value="{{ filtros.busca }}" placeholder="Digite o nome ou código IBGE" autocomplete="off">
+    </label>
+    <label class="input-label">Ordenar por
+      <select name="ordem">
+        {% for valor, nome in [('', 'Ordem manual'), ('position', 'Posição nacional'), ('name', 'Nome (A–Z)'), ('score', 'Maior score'), ('score-asc', 'Menor score'), ('population', 'Maior população')] %}
+        <option value="{{ valor }}" {% if filtros.ordem == valor %}selected{% endif %}>{{ nome }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    {{ seletor_eixos(eixos, ativos) }}
+    <button class="sr-only" type="submit">Aplicar filtros</button>
+    <a class="button button-quiet" data-parcial href="/site/favoritos.html?eixos={{ eixos_url }}">Limpar filtros</a>
+  </form>
+</section>
+{% endif %}
 {% if itens %}
 {% set score_label = 'Score geral' if ativos|length == 4 else 'Score dos eixos selecionados' %}
+{% set manual = not filtros.ordem and not filtros.busca %}
 <section class="panel ranking-panel" aria-label="Municípios favoritos">
   <div class="ranking-table-wrap" tabindex="0">
     <table class="ranking-table ranking-table-municipios" role="table">
       <thead>
-        <tr><th>Posição</th><th>Município</th><th>População</th><th>{{ score_label }}</th><th>Ordem</th><th>Ações</th></tr>
+        <tr><th>Posição</th><th>Município</th><th>População</th><th>{{ score_label }}</th>{% if manual %}<th>Ordem</th>{% endif %}<th>Ações</th></tr>
       </thead>
       <tbody>
         {% for item in itens %}
@@ -26,12 +43,14 @@
           <th scope="row">{{ item.nome }} · {{ item.uf }}</th>
           <td class="rotulo-movel" data-rotulo="População">{{ numero(item.populacao, 0) }}</td>
           <td class="rotulo-movel" data-rotulo="{{ score_label }}">{{ numero(item.score) }}</td>
+          {% if manual %}
           <td class="rotulo-movel" data-rotulo="Ordem">
             <div class="actions">
               <button class="row-action" type="button" data-move-up="{{ item.id }}" {% if loop.first %}disabled{% endif %} aria-label="Mover {{ item.nome }} para cima" title="Subir na lista">↑</button>
               <button class="row-action" type="button" data-move-down="{{ item.id }}" {% if loop.last %}disabled{% endif %} aria-label="Mover {{ item.nome }} para baixo" title="Descer na lista">↓</button>
             </div>
           </td>
+          {% endif %}
           <td class="acoes-municipio">{{ acoes(item, favoritos) }}</td>
         </tr>
         {% endfor %}
@@ -39,6 +58,8 @@
     </table>
   </div>
 </section>
+{% elif total_favoritos %}
+<p class="panel copy-panel">Nenhum município favorito corresponde à busca.</p>
 {% else %}
 <p class="panel copy-panel">Salve municípios pela estrela no ranking ou no detalhe municipal.</p>
 {% endif %}

@@ -45,7 +45,7 @@
         <small>{{ card.grupo }} municípios{% if item.score is not none and card.referencia is not none %} · Diferença {{ numero(item.score - card.referencia) }} pontos{% endif %}</small>
       </div>
       <div class="actions">
-        {{ acoes(item, favoritos) }}
+        {{ acoes(item, favoritos, false) }}
         <button class="button button-danger" type="button" data-remove="{{ item.id }}">Remover</button>
       </div>
     </div>

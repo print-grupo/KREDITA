@@ -7,10 +7,12 @@
 </div>
 {% endmacro %}
 
-{% macro acoes(item, favoritos) %}
+{% macro acoes(item, favoritos, mostrar_comparar=True) %}
 <div class="actions">
   <a class="row-action" href="/site/municipio.html?id={{ item.id }}" aria-label="Detalhes de {{ item.nome }}" title="Ver detalhes"><span>→</span><span class="acao-legenda">Detalhes</span></a>
+  {% if mostrar_comparar %}
   <button class="row-action" type="button" data-add="{{ item.id }}" aria-label="Comparar {{ item.nome }}" title="Adicionar à comparação"><span>+</span><span class="acao-legenda">Comparar</span></button>
+  {% endif %}
   <button class="row-action" type="button" data-favorite="{{ item.id }}" aria-label="Favorito {{ item.nome }}" title="Salvar nos favoritos" aria-pressed="{{ 'true' if item.id in favoritos else 'false' }}"><span data-estrela>{{ '★' if item.id in favoritos else '☆' }}</span><span class="acao-legenda">{{ 'Salvo' if item.id in favoritos else 'Favoritar' }}</span></button>
 </div>
 {% endmacro %}
