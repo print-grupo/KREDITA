@@ -1,9 +1,9 @@
 import csv
 import io
+import json
 import math
 import re
 import unicodedata
-from collections import defaultdict
 from statistics import mean, median
 from itertools import combinations
 from urllib.parse import urlencode
@@ -157,19 +157,21 @@ def url_com(**mudancas):
     return request.path + "?" + urlencode(dict(request.args.to_dict(flat=False), **mudancas), doseq=True)
 
 
-def serie_scr(conn, consulta, codigos, eixos):
+def serie_scr(conn, lote_scr, codigos, eixos):
     if not codigos:
         return []
-    permitidos = set(codigos)
-    serie = defaultdict(list)
-    for row in conn.execute(consulta):
-        if row["codigo_ibge"] not in permitidos:
-            continue
-        valor = score_por_eixos(row["score"], row["eixos"], eixos)
-        lista = serie[row["mes"]]
-        if valor is not None:
-            lista.append(valor)
-    return [(mes, mean(valores) if valores else None) for mes, valores in serie.items()]
+    expr = ("s.score" if len(eixos) == 4
+            else f"CASE WHEN s.score IS NOT NULL THEN ({' + '.join(f's.e{i + 1}' for i in eixos)}) / {len(eixos)}.0 END")
+    filtro, param = (("s.codigo_ibge = ?", codigos[0]) if len(codigos) == 1
+                     else ("s.codigo_ibge IN (SELECT value FROM json_each(?))", json.dumps(codigos)))
+    rows = conn.execute(
+        f"""SELECT substr(e.competencia, 1, 7) AS mes, AVG({expr}) AS media
+            FROM edicoes_score e JOIN scores_municipais s ON s.edicao_id = e.id
+            WHERE e.tipo = 'simulacao_scr' AND e.lote_id = ({lote_scr}) AND {filtro}
+            GROUP BY mes ORDER BY mes""",
+        (param,),
+    ).fetchall()
+    return [(row["mes"], row["media"]) for row in rows]
 
 
 def codigos_validos(chave):
@@ -237,8 +239,7 @@ def painel(pagina, backend):
                 contexto["apostas"] = apostas
             if pagina in ("index", "ranking", "municipio", "favoritos", "comparar"):
                 edicao = backend.consulta_edicao(conn)
-                catalogo = conn.execute(f"SELECT {backend.RESUMO} {backend.JUNCAO} ORDER BY m.nome, m.codigo_ibge",
-                                        (edicao["id"],)).fetchall()
+                catalogo = backend.catalogo_publicado(conn, edicao)
                 catalogo, ranking = classificar(catalogo, eixos)
                 por_codigo = {item["id"]: item for item in catalogo}
                 selecionado = por_codigo.get(args.get("id"))
@@ -255,7 +256,7 @@ def painel(pagina, backend):
                                     indice=indice, total_paginas=paginas)
                 if pagina == "index":
                     codigos = [selecionado["id"]] if selecionado else [item["id"] for item in itens]
-                    historico = serie_scr(conn, backend.CONSULTA_SCR, codigos, eixos)
+                    historico = serie_scr(conn, backend.LOTE_SCR, codigos, eixos)
                     contexto.update(total=len(itens), media=mean(i["score"] for i in itens) if itens else None,
                                     lista_uf=[i for i in catalogo if filtros["uf"] and i["uf"] == filtros["uf"]],
                                     mapa=[[i["id"], i["score"]] for i in itens],

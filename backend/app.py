@@ -28,6 +28,13 @@ CONSULTA_SCR = f"""SELECT s.codigo_ibge, substr(e.competencia, 1, 7) AS mes, s.s
                           s.e1, s.e2, s.e3, s.e4
                    FROM edicoes_score e JOIN scores_municipais s ON s.edicao_id = e.id
                    WHERE e.tipo = 'simulacao_scr' AND e.lote_id = ({LOTE_SCR})"""
+CSP = (
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; "
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+    "font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; "
+    "connect-src 'self'; object-src 'none'; frame-ancestors 'self'; "
+    "base-uri 'self'; form-action 'self'"
+)
 
 
 def _dict_row(cursor, row):
@@ -76,6 +83,7 @@ def conectar_sqlite(url=None, *, como_dict=False):
     if alvo.startswith("sqlite:///"):
         alvo = alvo.removeprefix("sqlite:///")
     conn = sqlite3.connect(alvo, timeout=30, isolation_level=None, factory=ConexaoSQLite)
+    conn.alvo = alvo
     conn.execute("PRAGMA foreign_keys = ON")
     conn.execute("PRAGMA journal_mode = WAL")
     conn.execute("PRAGMA synchronous = NORMAL")
@@ -124,11 +132,36 @@ def parametro_edicao():
     return int(valor)
 
 
+@lru_cache(maxsize=4)
+def _catalogo_cache(db_alvo, edicao_id, lote_id, publicado_em):
+    with conectar_sqlite(db_alvo, como_dict=True) as conn:
+        return tuple(conn.execute(
+            f"SELECT {RESUMO} {JUNCAO} ORDER BY m.nome, m.codigo_ibge", (edicao_id,)
+        ).fetchall())
+
+
+def catalogo_publicado(conn, edicao):
+    return _catalogo_cache(conn.alvo, edicao["id"], edicao["lote_id"], edicao["publicado_em"])
+
+
+@site.after_app_request
+def cabecalhos_seguranca(response):
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
+    response.headers.setdefault("Content-Security-Policy", CSP)
+    return response
+
+
 @site.app_errorhandler(404)
+@site.app_errorhandler(500)
 @site.app_errorhandler(503)
 def erro_api(error):
     if request.path.startswith("/api/"):
-        return jsonify(erro=error.description), error.code
+        codigo = getattr(error, "code", 500) or 500
+        mensagem = "Erro interno do servidor." if codigo == 500 else error.description
+        return jsonify(erro=mensagem), codigo
     return error
 
 
@@ -147,8 +180,7 @@ def arquivos_site(name="index.html"):
 def sugestoes_site():
     with conexao() as conn:
         edicao = consulta_edicao(conn)
-        itens = conn.execute(f"SELECT {RESUMO} {JUNCAO} ORDER BY m.nome, m.codigo_ibge",
-                             (edicao["id"],)).fetchall()
+        itens = catalogo_publicado(conn, edicao)
     return sugestoes(itens)
 
 
