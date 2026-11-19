@@ -68,7 +68,18 @@
   {{ tabela(itens, favoritos, 'Score geral' if ativos|length == 4 else 'Score dos eixos selecionados', numero) }}
   <div class="detail-actions" style="margin-top:14px;margin-bottom:0">
     {% if indice > 1 %}<a class="button button-outline" data-pagina="{{ indice-1 }}" href="{{ paginar(indice-1) }}">Anterior</a>{% else %}<button class="button button-outline" type="button" disabled>Anterior</button>{% endif %}
-    <span id="ranking-page" aria-live="polite">{{ indice }} / {{ total_paginas }}</span>
+    <form data-parcial method="get" class="actions" aria-label="Ir para página">
+      {% for chave, valor in [('busca', filtros.busca), ('uf', filtros.uf), ('porte', filtros.porte), ('ordem', filtros.ordem), ('eixos', eixos_url)] %}
+      {% if valor %}<input type="hidden" name="{{ chave }}" value="{{ valor }}">{% endif %}
+      {% endfor %}
+      {% for min_v in filtros.minimos %}
+      {% if min_v is not none %}<input type="hidden" name="min{{ loop.index }}" value="{{ min_v }}">{% endif %}
+      {% endfor %}
+      <label class="sr-only" for="ranking-page-input">Número da página</label>
+      <input id="ranking-page-input" type="number" name="pagina" min="1" max="{{ total_paginas }}" value="{{ indice }}" style="width:74px;min-height:40px;padding:6px 8px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--ink);text-align:center">
+      <span id="ranking-page" class="subtitle" aria-live="polite">/ {{ total_paginas }}</span>
+      <button class="button button-outline" type="submit">Ir</button>
+    </form>
     {% if indice < total_paginas %}<a class="button button-outline" data-pagina="{{ indice+1 }}" href="{{ paginar(indice+1) }}">Próxima</a>{% else %}<button class="button button-outline" type="button" disabled>Próxima</button>{% endif %}
   </div>
 </section>

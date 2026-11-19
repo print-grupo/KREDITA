@@ -3,30 +3,14 @@
 {% block conteudo %}
 {{ cabecalho('Comparar municípios', 'Compare score, posição, eixos e histórico de até três municípios.') }}
 <div class="detail-actions">
-  <button class="button button-primary" type="button" data-open>+ Adicionar município</button>
+  <div class="actions">
+    <button class="button button-primary" type="button" data-open>+ Adicionar município</button>
+    <form data-parcial method="get">{{ seletor_eixos(eixos, ativos) }}</form>
+  </div>
   {% if perfis %}
   <a class="button button-outline" data-exportar href="{{ exportar() }}">Exportar CSV</a>
   {% endif %}
 </div>
-
-<section class="panel comparison-reference">
-  <form data-parcial method="get" class="rank-filters" style="width:100%">
-    {{ seletor_eixos(eixos, ativos) }}
-    <label class="input-label">Referência do score
-      <select name="referencia">
-        <option value="uf">Mediana estadual</option>
-        <option value="porte" {% if args.get('referencia') == 'porte' %}selected{% endif %}>Mediana nacional por porte</option>
-      </select>
-    </label>
-    <label class="input-label">Histórico lado a lado
-      <select name="serie">
-        <option value="simulacao_scr">Simulação SCR</option>
-        <option value="publicado" {% if args.get('serie') == 'publicado' %}selected{% endif %}>Edições publicadas</option>
-      </select>
-    </label>
-    <button class="button button-primary" type="submit">Aplicar</button>
-  </form>
-</section>
 
 {% if perfis %}
 <section class="compare-grid" aria-label="Municípios selecionados">
