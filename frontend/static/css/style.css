@@ -58,7 +58,7 @@ h2 { margin-bottom: 10px; font-size: 18px; }
   overflow-y: auto; transition: transform .2s ease;
 }
 .brand { display: flex; align-items: center; gap: 12px; padding: 0 11px 35px; text-decoration: none; color: var(--ink); }
-.brand-mark { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 12px; background: #f3f5f7; }
+.brand-mark { width: 42px; height: 42px; display: grid; place-items: center; }
 .brand-mark img { width: 34px; height: 34px; object-fit: contain; }
 .brand-name { font: 800 16px Manrope, sans-serif; letter-spacing: .08em; }
 .menu-caption { padding: 0 14px 11px; color: var(--muted); font-size: 10px; letter-spacing: .14em; font-weight: 700; }

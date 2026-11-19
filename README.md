@@ -150,4 +150,4 @@ Abra [o painel](http://127.0.0.1:8788/site/). O SQLite é criado no volume Docke
 
 - `backend/` reúne Flask, importador, dados de carga, migrações e testes.
 - `frontend/` reúne os templates Jinja e os arquivos estáticos, separados por tipo.
-- `docs/` reúne [operação](docs/operacao.md), [metodologia](docs/documentacao-dados/score.md), [convenções do Git](docs/git.md) e [Scrum](docs/scrum/README.md).
+- `docs/` reúne [operação](docs/operacao.md), [metodologia](docs/documentacao-dados/score.md), [convenções do Git](docs/git.md) e [backlog das sprints](docs/scrum/backlog/).
