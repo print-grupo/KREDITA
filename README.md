@@ -147,9 +147,9 @@ Uma tarefa ou User Story será considerada concluída quando:
 
 ---
 
-## Manual de Usuário
+## Manual do Usuário
 
-[ preencher ]
+Consulte o [Manual do Usuário](docs/manual.md) para aprender a utilizar os filtros, explorar o mapa, consultar o ranking, comparar municípios, salvar favoritos e exportar os resultados.
 
 ---
 
