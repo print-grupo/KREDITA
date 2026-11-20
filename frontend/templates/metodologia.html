@@ -2,7 +2,7 @@
 {% from '_componentes.html' import cabecalho %}
 {% block conteudo %}
 {{ cabecalho('Metodologia e fontes', 'Escala, cobertura e origem dos dados exibidos.') }}
-<section class="panel copy-panel">
+<section class="panel copy-panel methodology-panel">
   <h2>Como o score é calculado</h2>
   <h3>1. Converter os dados em notas</h3>
   <p>Cada indicador tem uma fórmula para seu valor bruto e outra para a nota de 0 a 100. No I06, um saldo de −3 empregos formais por mil habitantes resulta em 50 + 50 × (−3 ÷ 15) = <strong>40 pontos</strong>. Um saldo confirmado de zero vale 50 pontos.</p>
@@ -28,7 +28,7 @@
   <p>As edições publicadas guardam os resultados e fontes usados em cada publicação. A simulação mensal varia I01, I03 e I11 do SCR e mantém os demais indicadores na referência da edição.</p>
   <p><a href="apostas.html">Consultar a metodologia e as fontes dos dados de apostas</a></p>
 </section>
-<section class="panel copy-panel bets-context">
+<section class="panel copy-panel methodology-panel bets-context">
   <h2>Indicadores e fontes</h2>
   <div class="ranking-table-wrap" tabindex="0" aria-label="Indicadores do score">
     <table class="ranking-table method-indicators" role="table">
@@ -46,7 +46,7 @@
   </div>
   <p><a href="https://www.ibge.gov.br/geociencias/todos-os-produtos-geociencias/15774-malhas.html">Malha Municipal do IBGE</a></p>
 </section>
-<section class="panel copy-panel bets-context">
+<section class="panel copy-panel methodology-panel bets-context">
   <h2>Fórmula de cada indicador</h2>
   <p>Nas fórmulas, <strong>x</strong> é o valor usado. <strong>t</strong> é esse valor limitado à faixa indicada e <strong>ln</strong> é o logaritmo natural. Para os quatro indicadores estaduais ajustados, x já inclui o cofator.</p>
   <div class="method-formulas">

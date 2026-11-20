@@ -397,3 +397,18 @@ dialog::backdrop { background: #142a3780; }
   .topbar-actions { flex-wrap: wrap; justify-content: end; }
 }
 
+
+/* Guide and methodology: use available width without widening other pages. */
+.site-guide { display: grid; gap: 16px; }
+.site-guide .copy-panel, .methodology-panel { max-width: none; min-width: 0; }
+.guide-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.guide-grid .copy-panel { margin: 0; }
+.methodology-panel .method-indicators { white-space: normal; table-layout: fixed; overflow-wrap: anywhere; }
+.methodology-panel .method-indicators th:first-child { width: 34%; }
+.methodology-panel .method-indicators th:nth-child(2) { width: 28%; }
+.methodology-panel .formula-expression { white-space: normal; overflow-wrap: anywhere; }
+@media (max-width: 760px) {
+  .guide-grid { grid-template-columns: minmax(0, 1fr); }
+  .methodology-panel .method-indicators th:first-child,
+  .methodology-panel .method-indicators th:nth-child(2) { width: auto; }
+}
