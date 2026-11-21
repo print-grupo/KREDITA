@@ -177,7 +177,7 @@ Uma tarefa ou User Story será considerada concluída quando:
 
 ## Manual do Usuário
 
-Consulte o [Manual do Usuário](docs/manual.md) para aprender a utilizar os filtros, explorar o mapa, consultar o ranking, comparar municípios, salvar favoritos e exportar os resultados.
+Consulte o [Manual do Usuário](docs/documentacao-dados/manual.md) para aprender a utilizar os filtros, explorar o mapa, consultar o ranking, comparar municípios, salvar favoritos e exportar os resultados.
 
 ---
 
@@ -206,4 +206,4 @@ Abra [o painel](http://127.0.0.1:8788/site/). O SQLite é criado no volume Docke
 
 - `backend/` reúne Flask, importador, dados de carga, migrações e testes.
 - `frontend/` reúne os templates Jinja e os arquivos estáticos, separados por tipo.
-- `docs/` reúne [operação](docs/operacao.md), [metodologia](docs/documentacao-dados/score.md), [convenções do Git](docs/git.md) e [backlog das sprints](docs/scrum/backlog/).
+- `docs/` reúne [operação](docs/documentacao-dados/operacao.md), [metodologia](docs/documentacao-dados/score.md), [convenções do Git](docs/git.md) e [backlog das sprints](docs/scrum/backlog/).

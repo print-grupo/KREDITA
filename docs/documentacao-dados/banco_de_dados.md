@@ -281,5 +281,5 @@ O acesso ao banco ocorre pelo backend Flask. O navegador recebe as páginas e os
 - [Aplicação e conexão com SQLite](../../backend/app.py)
 - [Consultas utilizadas pelo site](../../backend/consultas.py)
 - [Testes do banco e da integração](../../backend/tests/test_sqlite.py)
-- [Guia de operação](../operacao.md)
+- [Guia de operação](operacao.md)
 - [Documentação oficial: aplicações adequadas para SQLite](https://www.sqlite.org/whentouse.html)
