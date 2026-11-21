@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% from '_componentes.html' import cabecalho, tabela, seletor_eixos %}
+{% block conteudo %}
+{{ cabecalho('Favoritos', 'Municípios salvos neste navegador.') }}
+<div class="detail-actions">
+  <a class="button button-outline" href="/site/ranking.html">Abrir ranking</a>
+  {% if itens %}
+  <a class="button button-primary" data-exportar href="{{ exportar() }}">Exportar CSV</a>
+  {% endif %}
+</div>
+{% if total_favoritos %}
+<section class="panel ranking-panel" aria-label="Filtros de favoritos" style="margin-bottom:16px">
+  <form data-parcial data-auto-submit method="get" class="rank-filters">
+    <label class="input-label">Buscar nos favoritos
+      <input type="search" name="busca" value="{{ filtros.busca }}" placeholder="Digite o nome ou código IBGE" autocomplete="off">
+    </label>
+    <label class="input-label">Ordenar por
+      <select name="ordem">
+        {% for valor, nome in ordens %}
+        <option value="{{ valor }}" {% if filtros.ordem == valor %}selected{% endif %}>{{ nome }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    {{ seletor_eixos(eixos, ativos) }}
+    <button class="sr-only" type="submit">Aplicar filtros</button>
+    <a class="button button-quiet" data-parcial href="/site/favoritos.html?eixos={{ eixos_url }}">Limpar filtros</a>
+  </form>
+</section>
+{% endif %}
+{% if itens %}
+<section class="panel ranking-panel" aria-label="Municípios favoritos">
+  {{ tabela(itens, favoritos, score_label, numero) }}
+</section>
+{% elif total_favoritos %}
+<p class="panel copy-panel">Nenhum município favorito corresponde à busca.</p>
+{% else %}
+<p class="panel copy-panel">Salve municípios pela estrela no ranking ou no detalhe municipal.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,16 @@
+name: kredita-revisao
+
+services:
+  web:
+    build: .
+    image: kredita-revisao:local
+    environment:
+      DATABASE_URL: /app/data/kredita.db
+    volumes:
+      - data:/app/data
+    ports:
+      - "${KREDITA_HTTP_BIND:-0.0.0.0}:${KREDITA_HTTP_PORT:-8788}:8080"
+    restart: unless-stopped
+
+volumes:
+  data:

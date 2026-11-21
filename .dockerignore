@@ -1,0 +1,13 @@
+*
+!Dockerfile
+!backend/
+!backend/app.py
+!backend/consultas.py
+!backend/importar_kredita.py
+!backend/dados/
+!backend/dados/*.json
+!backend/requirements.txt
+!backend/banco_de_dados/
+!backend/banco_de_dados/*.sql
+!frontend/
+!frontend/**

@@ -137,3 +137,17 @@ Uma tarefa ou User Story será considerada concluída quando:
 | Isadora de Sousa Fanti |  Scrum Team  | [![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/zzadoraa) | [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/isadora-fanti-543262286/) |
 | Júlio Ferreira Siqueira dos Santos |  Scrum Team  | [![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/JulioFSSantos4645) | [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/julio-ferreira-344a09434/) |
 | Pedro Aurélio Freitas Lemos dos Santos Lira |  Scrum Team  | [![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/eoPedroAurelio) | [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/pedro-aurelio/) |
+
+## Executar o painel
+
+Na raiz do repositório:
+
+```sh
+docker compose up -d --build
+```
+
+Abra [o painel](http://127.0.0.1:8788/site/). O SQLite é criado no volume Docker na primeira execução.
+
+- `backend/` reúne Flask, importador, dados de carga, migrações e testes.
+- `frontend/` reúne os templates Jinja e os arquivos estáticos, separados por tipo.
+- `docs/` reúne [operação](docs/operacao.md), [metodologia](docs/documentacao-dados/score.md), [convenções do Git](docs/git.md) e [backlog das sprints](docs/scrum/backlog/).
