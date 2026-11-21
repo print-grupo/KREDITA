@@ -334,8 +334,8 @@ Para comparar dois municípios:
 ## Documentação relacionada
 
 - [Guia de instalação e operação](operacao.md)
-- [Indicadores](documentacao-dados/indicadores.md)
-- [Metodologia do score](documentacao-dados/score.md)
-- [Cofator de reajuste](documentacao-dados/cofator.md)
-- [Fluxo de dados](documentacao-dados/fluxo_de_dados.md)
-- [Banco de dados](documentacao-dados/banco_de_dados.md)
+- [Indicadores](indicadores.md)
+- [Metodologia do score](score.md)
+- [Cofator de reajuste](cofator.md)
+- [Fluxo de dados](fluxo_de_dados.md)
+- [Banco de dados](banco_de_dados.md)
