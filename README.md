@@ -9,7 +9,7 @@ Neste projeto, nosso objetivo é explorar e transformar dados econômicos públi
 # Product Backlog
 
 | ID | Sprint | Prioridade | User Story | Critérios de Aceite | Est. |
-|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- |
 | **US01** | 1 | Alta | **Como analista de crédito**, gostaria de coletar os dados necessários aos indicadores definidos no projeto e integrar diferentes fontes públicas, para que a análise represente as características financeiras, sociais e demográficas das regiões analisadas. | - Fontes e formas de acesso aos dados dos indicadores identificadas e documentadas.<br>- Dados coletados e disponibilizados no Google Colab.<br>- Dados organizados com identificação da região e do período de referência, conforme a disponibilidade das fontes.<br>- Limitações e indisponibilidades encontradas na coleta registradas. | **8** |
 | **US02** | 1 | Alta | **Como analista de dados**, gostaria que os dados coletados para os indicadores estivessem limpos, padronizados e organizados, para garantir a confiabilidade das informações utilizadas nas análises do projeto. | - Dados nulos, infinitos e inconsistentes identificados e tratados conforme os critérios definidos pela equipe.<br>- Tipos de dados e formatos numéricos padronizados conforme as necessidades de cada base.<br>- Dados organizados em arquivos ou DataFrames no Google Colab.<br>- Bases preparadas para a construção dos gráficos e as próximas etapas de análise. | **8** |
 | **US03** | 1 | Alta | **Como usuário final**, desejo visualizar os dados reais processados por meio de gráficos dos diferentes eixos do projeto, para facilitar a análise e a compreensão das características das regiões. | - Gráficos desenvolvidos com dados reais dos Eixos 1 e 2: Risco de Crédito e Capacidade Financeira.<br>- Gráficos desenvolvidos com dados reais dos Eixos 3 e 4: Inclusão Financeira e Demografia.<br>- Indicadores, regiões, períodos e unidades identificados nas visualizações, quando aplicáveis.<br>- Gráficos integrados ao site e apresentados de forma legível. | **3** |
@@ -18,10 +18,10 @@ Neste projeto, nosso objetivo é explorar e transformar dados econômicos públi
 | **US06** | 2 | Alta | **Como analista de dados**, gostaria de organizar e otimizar o processo de tratamento e extração das informações e utilizá-las na construção de um ranking regional, para facilitar a análise e comparação entre as regiões do projeto. | - Decisões sobre os indicadores registradas no Google Colab.<br>- Estrutura para relacionar indicadores estaduais e municipais definida no Colab.<br>- Processo de extração analisado e otimizado.<br>- Desempenho do Colab melhorado.<br>- Método para construção do ranking regional definido.<br>- Ranking regional estruturado a partir dos dados do projeto. | **8** |
 | **US07** | 2 | Alta | **Como tomador de decisões**, gostaria de analisar a evolução histórica do Score e identificar o potencial econômico das regiões, para compreender o comportamento dos resultados ao longo do tempo e apoiar a identificação das regiões com maior potencial. | - Histórico do Score disponível.<br>- Gráficos de linha representando a evolução dos resultados.<br>- Evolução do Score analisada ao longo do tempo.<br>- Método para identificar o potencial econômico regional definido com base no histórico.<br>- Documentação do GitHub atualizada com as decisões e resultados da Sprint. | **8** |
 | **US08** | 2 | Alta | **Como usuário**, gostaria de acessar uma aplicação web com frontend e backend integrados, para visualizar e utilizar as funcionalidades e informações desenvolvidas pelo projeto. | - Funcionalidades e estrutura da aplicação definidas.<br>- Páginas, elementos e organização visual especificados.<br>- Frontend desenvolvido conforme as definições estabelecidas.<br>- Backend desenvolvido para atender às funcionalidades da aplicação.<br>- Integração entre frontend e backend realizada.<br>- Aplicação preparada para receber e apresentar os dados do projeto. | **13** |
-| **US09** | 3 | Média | **Como estrategista**, quero comparar detalhadamente duas regiões lado a lado, para decidir com maior precisão qual mercado focar. | - Tela de comparação regional implementada.<br>- Exibição de duas regiões selecionadas lado a lado.<br>- Gráficos paralelos para facilitar a comparação dos indicadores. | **3** |
-| **US10** | 3 | Baixa | **Como gestor**, desejo exportar os dados do sistema em formatos variados, como PDF, CSV, XLSX e XML, para facilitar apresentações e o uso offline. | - Botão de exportação ou download disponível na interface.<br>- Geração dos arquivos nos formatos PDF, CSV, XLSX e XML.<br>- Arquivos exportados gerados de maneira válida. | **3** |
-| **US11** | 3 | Baixa | **Como cliente**, desejo acessar o website institucional, a metodologia e os manuais do sistema, para compreender facilmente a origem do Score e como utilizar a ferramenta. | - Página pública de documentação implementada.<br>- Disponibilização dos manuais de uso do sistema.<br>- Explicação da metodologia utilizada no desenvolvimento do Score. | **8** |
-| **US12** | 3 | Média | **Como analista**, quero filtrar os indicadores por cenários e níveis geográficos disponíveis, para analisar as informações de forma mais específica e comparar os resultados conforme o recorte selecionado. | - Filtros de cenário e nível geográfico disponíveis na interface, conforme os dados do projeto.<br>- Filtros aplicados ao mapa e à tabela de ranking.<br>- Informações exibidas atualizadas conforme os filtros selecionados.<br>- Ausência de dados para o recorte selecionado informada ao usuário. | **5** |
+| **US09** | 3 | Alta | **Como analista de dados**, gostaria de filtrar, visualizar e acompanhar os indicadores por diferentes cenários, níveis geográficos e períodos, para realizar análises detalhadas e identificar tendências socioeconômicas. | - Revisão final do Google Colab e das fórmulas do Score concluída.<br>- Filtros por localização, cenário e período implementados conforme a disponibilidade dos dados.<br>- Limitações e ausência de dados sinalizadas nas visualizações. | **13** |
+| **US10** | 3 | Alta | **Como estrategista**, gostaria de comparar municípios e regiões por meio de seus indicadores e exportar os resultados, para identificar diferenças entre as localidades e apoiar decisões estratégicas. | - Seleção de localidades para comparação disponível.<br>- Informações das localidades apresentadas lado a lado.<br>- Comparações realizadas com critérios e períodos compatíveis.<br>- Exportação dos dados da análise implementada.<br>- Pesquisas sobre apostas disponibilizadas como conteúdo contextual. | **8** |
+| **US11** | 3 | Média | **Como usuário**, gostaria de acessar uma plataforma online estável, intuitiva e responsiva, para utilizar as funcionalidades do projeto de maneira simples e eficiente. | - Frontend definitivo integrado ao backend e aos dados do projeto.<br>- Banco de dados implementado e integrado à aplicação.<br>- Interface aprimorada quanto ao design, à navegação e à responsividade.<br>- Aplicação publicada no provedor de nuvem definido pela equipe.<br>- Funcionalidades principais testadas no ambiente publicado. | **8** |
+| **US12** | 3 | Média | **Como usuário**, gostaria de acessar a documentação, a metodologia e o manual do sistema, para compreender seu funcionamento, a origem dos indicadores e a interpretação dos resultados. | - Documentos atualizados com as funcionalidades, entregas e orientações de acesso.<br>- Documentação metodológica atualizada e disponibilizada no GitHub.<br>- Manual do usuário elaborado com orientações sobre as funcionalidades entregues.<br>- Documentação revisada quanto à clareza e à consistência com o sistema. | **5** |
 ---
 
 ## Sprints e Entregas
@@ -30,31 +30,59 @@ Neste projeto, nosso objetivo é explorar e transformar dados econômicos públi
 | --- | --- | --- |
 | 07/09/2026 - 27/09/2026 | [![Sprint 1](https://img.shields.io/badge/Sprint%201-Documenta%C3%A7%C3%A3o-36a2eb?style=flat&logo=markdown&logoColor=white)](./docs/scrum/backlog/sprint-1.md) | [![YouTube](https://img.shields.io/badge/YouTube-Assista%20ao%20v%C3%ADdeo-FF0000?style=flat&logo=youtube&logoColor=white)](https://youtu.be/ADqZf03HH-4) |
 | 05/10/2026 - 25/10/2026 | [![Sprint 2](https://img.shields.io/badge/Sprint%202-Documenta%C3%A7%C3%A3o-36a2eb?style=flat&logo=markdown&logoColor=white)](./docs/scrum/backlog/sprint-2.md) | [![YouTube](https://img.shields.io/badge/YouTube-Assista%20ao%20vídeo-red?style=flat&logo=youtube&logoColor=white)](https://www.youtube.com/watch?v=owJyNrZKpBI) |
-| 02/11/2026 - 22/11/2026 | [![Sprint 3](https://img.shields.io/badge/Sprint%203-Documenta%C3%A7%C3%A3o-36a2eb?style=flat&logo=markdown&logoColor=white)](./docs/scrum/backlog/sprint-3.md) | [Assistir no YouTube](https://www.google.com/search?q=link-para-video) |
+| 02/11/2026 - 22/11/2026 | [![Sprint 3](https://img.shields.io/badge/Sprint%203-Documenta%C3%A7%C3%A3o-36a2eb?style=flat&logo=markdown&logoColor=white)](./docs/scrum/backlog/sprint-3.md) | [![YouTube](https://img.shields.io/badge/YouTube-Assista%20ao%20vídeo-red?style=flat&logo=youtube&logoColor=white)](https://youtu.be/7Np6BT1NMD0)
+
+## Google Colab da equipe
+
+Acesse o notebook atualizado do projeto para consultar e executar os cálculos do Score.
+
+[![Abrir o Colab da equipe](https://img.shields.io/badge/Google_Colab-Abrir_notebook-F9AB00?style=for-the-badge&logo=googlecolab&logoColor=white)](https://colab.research.google.com/drive/1R2xVnBUP_Qv7AYr3wVst7iTW0_nd5bKv#scrollTo=3163fc66)
 
 ---
 
-## 🧰 ferramentas utilizadas 
+## 🧰 Tecnologias e ferramentas utilizadas
 
 ### Interface Web
 
 ![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=flat&logo=html5&logoColor=white)
-![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat&logo=css3&logoColor=white)
+![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat&logo=css&logoColor=white)
 
-### Desenvolvimento
+### Backend
 
 ![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white)
+![Flask](https://img.shields.io/badge/Flask-000000?style=flat&logo=flask&logoColor=white)
+![Jinja](https://img.shields.io/badge/Jinja-B41717?style=flat&logo=jinja&logoColor=white)
+
+### Banco de Dados
+
+![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat&logo=sqlite&logoColor=white)
+![SQL](https://img.shields.io/badge/SQL-4479A1?style=flat)
 
 ### Tratamento e Análise de Dados
 
-![Google Colab](https://img.shields.io/badge/Google%20Colab-F9AB00?style=flat&logo=googlecolab&logoColor=white)
+![Google Colab](https://img.shields.io/badge/Google_Colab-F9AB00?style=flat&logo=googlecolab&logoColor=white)
 ![Pandas](https://img.shields.io/badge/Pandas-150458?style=flat&logo=pandas&logoColor=white)
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1o7CGwUoGUn3ozhkwH5QGE7_Af_MAfyta?usp=sharing)
 
-### Organização do Projeto
+### Execução e Publicação
 
-![Lefthook](https://img.shields.io/badge/Lefthook-000000?style=flat)
+![Oracle Cloud](https://img.shields.io/badge/Oracle_Cloud-F80000?style=flat&logo=oracle&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)
+![Docker Compose](https://img.shields.io/badge/Docker_Compose-2496ED?style=flat&logo=docker&logoColor=white)
+![Gunicorn](https://img.shields.io/badge/Gunicorn-499848?style=flat&logo=gunicorn&logoColor=white)
+
+### Design e Comunicação Visual
+
+![Figma](https://img.shields.io/badge/Figma-F24E1E?style=flat&logo=figma&logoColor=white)
+![Canva](https://img.shields.io/badge/Canva-00C4CC?style=flat&logo=canva&logoColor=white)
+
+### Organização e Versionamento
+
+![Git](https://img.shields.io/badge/Git-F05032?style=flat&logo=git&logoColor=white)
+![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat&logo=github&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=flat&logo=nodedotjs&logoColor=white)
 ![Jira](https://img.shields.io/badge/Jira-0052CC?style=flat&logo=jira&logoColor=white)
+![Lefthook](https://img.shields.io/badge/Lefthook-FF1E1E?style=flat)
+
 
 ## ✅ Critérios de Prontidão (DoR) e Conclusão (DoD)
 
@@ -82,32 +110,60 @@ Uma tarefa ou User Story será considerada concluída quando:
 #### Sprint 1 — Coleta, Tratamento, Visualização e Site Inicial
 
 **DoR:**
+
 - User Stories da Sprint validadas pela equipe.
 - Indicadores e fontes de dados definidos.
 - Estrutura do Google Colab disponível para desenvolvimento.
 - Ambiente de desenvolvimento preparado.
 
 **DoD:**
+
 - Dados iniciais dos indicadores coletados e disponibilizados no Colab.
 - Dados tratados e preparados para análise.
 - Gráficos dos eixos definidos desenvolvidos.
 - Estrutura inicial do site implementada e revisada.
 - Alterações versionadas no GitHub.
 
-#### Sprint 2 — Score e Integração
+#### Sprint 2 — Metodologia do Score, Ranking e integração
 
 **DoR:**
 
+- User Stories e critérios de aceite da Sprint definidos.
+- Dados da Sprint anterior disponíveis para análise.
+- Indicadores e respectivos níveis geográficos identificados.
+- Processo de extração e tratamento disponível no Google Colab.
+- Estrutura inicial da aplicação disponível integração no front end
+
 **DoD:**
 
+- Indicadores, relações, pesos e método de cálculo do Score definidos e documentados.
+- Método de relacionamento entre dados estaduais e municipais estabelecido.
+- Cálculo do Score e construção do ranking implementados no Google Colab.
+- Processo de extração e tratamento revisado, com melhorias de desempenho verificadas.
+- Frontend e backend desenvolvidos e integrados conforme o escopo da Sprint.
+- Decisões e resultados registrados na documentação do GitHub.
 
-#### Sprint 3 — Comparação, Exportação e Documentação
+#### Sprint 3 — Mapa para analise, Publicação da Aplicação e Documentação Final
 
 **DoR:**
 
+- User Stories, tarefas, prioridades e critérios de aceite da Sprint definidos.
+- Versões de referência do Google Colab e da aplicação disponíveis.
+- Dados, períodos e níveis geográficos disponíveis reconhecidos.
+- Estrutura do banco de dados e requisitos de integração definidos.
+- Pesquisas sobre apostas reunidas para revisão e apresentação no site.
+- Requisitos de hospedagem e documentos a atualizar identificados.
+
 **DoD:**
 
-
+- Revisão final do Google Colab e das fórmulas concluída, com resultados conferidos.
+- Filtros, gráficos e mapa interativo implementados, com identificação de períodos e ausência de dados.
+- Comparação entre localidades e exportação dos resultados disponíveis.
+- Pesquisas sobre apostas apresentadas como conteúdo contextual, com identificação das fontes.
+- Banco de dados implementado e integrado à aplicação.
+- Frontend definitivo integrado ao backend e aos dados do projeto.
+- Aplicação publicada no provedor de nuvem escolhido.
+- Documentação do GitHub, metodologia e manual do usuário atualizados e disponíveis para consulta.
 ---
 
 ## Estratégia de Branch
@@ -119,9 +175,9 @@ Uma tarefa ou User Story será considerada concluída quando:
 
 ---
 
-## Manual de Usuário
+## Manual do Usuário
 
-[ preencher ]
+Consulte o [Manual do Usuário](docs/documentacao-dados/manual.md) para aprender a utilizar os filtros, explorar o mapa, consultar o ranking, comparar municípios, salvar favoritos e exportar os resultados.
 
 ---
 
@@ -137,3 +193,17 @@ Uma tarefa ou User Story será considerada concluída quando:
 | Isadora de Sousa Fanti |  Scrum Team  | [![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/zzadoraa) | [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/isadora-fanti-543262286/) |
 | Júlio Ferreira Siqueira dos Santos |  Scrum Team  | [![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/JulioFSSantos4645) | [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/julio-ferreira-344a09434/) |
 | Pedro Aurélio Freitas Lemos dos Santos Lira |  Scrum Team  | [![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/eoPedroAurelio) | [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/pedro-aurelio/) |
+
+## Executar o painel
+
+Na raiz do repositório:
+
+```sh
+docker compose up -d --build
+```
+
+Abra [o painel](http://127.0.0.1:8788/site/). O SQLite é criado no volume Docker na primeira execução.
+
+- `backend/` reúne Flask, importador, dados de carga, migrações e testes.
+- `frontend/` reúne os templates Jinja e os arquivos estáticos, separados por tipo.
+- `docs/` reúne [operação](docs/documentacao-dados/operacao.md), [metodologia](docs/documentacao-dados/score.md), [convenções do Git](docs/git.md) e [backlog das sprints](docs/scrum/backlog/).

@@ -1,0 +1,148 @@
+{% macro cabecalho(titulo, subtitulo='') %}
+<div class="welcome-row">
+  <div>
+    <h1>{{ titulo }}<span class="accent-dot">.</span></h1>
+    {% if subtitulo %}<p class="subtitle">{{ subtitulo }}</p>{% endif %}
+  </div>
+</div>
+{% endmacro %}
+
+{% macro acoes(item, favoritos, mostrar_comparar=True) %}
+<div class="actions">
+  <a class="row-action" href="/site/municipio.html?id={{ item.id }}" aria-label="Detalhes de {{ item.nome }}" title="Ver detalhes"><span>→</span><span class="acao-legenda">Detalhes</span></a>
+  {% if mostrar_comparar %}
+  <button class="row-action" type="button" data-add="{{ item.id }}" aria-label="Comparar {{ item.nome }}" title="Adicionar à comparação"><span>+</span><span class="acao-legenda">Comparar</span></button>
+  {% endif %}
+  <button class="row-action" type="button" data-favorite="{{ item.id }}" aria-label="Favorito {{ item.nome }}" title="Salvar nos favoritos" aria-pressed="{{ 'true' if item.id in favoritos else 'false' }}"><span data-estrela>{{ '★' if item.id in favoritos else '☆' }}</span><span class="acao-legenda">{{ 'Salvo' if item.id in favoritos else 'Favoritar' }}</span></button>
+</div>
+{% endmacro %}
+
+{% macro tabela(itens, favoritos, score_label, numero) %}
+<div class="ranking-table-wrap" tabindex="0">
+  <table class="ranking-table ranking-table-municipios" role="table">
+    <thead>
+      <tr><th>Posição</th><th>Município</th><th>População</th><th>{{ score_label }}</th><th>Ações</th></tr>
+    </thead>
+    <tbody>
+      {% for item in itens %}
+      <tr>
+        <td class="rotulo-movel" data-rotulo="Posição">{{ (item.position ~ 'º') if item.position else '—' }}</td>
+        <th scope="row">{{ item.nome }} · {{ item.uf }}</th>
+        <td class="rotulo-movel" data-rotulo="População">{{ numero(item.populacao, 0) }}</td>
+        <td class="rotulo-movel" data-rotulo="{{ score_label }}">{{ numero(item.score) }}</td>
+        <td class="acoes-municipio">{{ acoes(item, favoritos) }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5">Nenhum município encontrado neste recorte.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endmacro %}
+
+{% macro seletor_eixos(eixos, ativos) %}
+<details class="axis-scope">
+  <summary class="button button-outline">Eixos do score <span>{{ 'Todos' if ativos|length == 4 else (ativos|length ~ '/4') }}</span></summary>
+  <div class="filter-popover">
+    <fieldset>
+      <legend>Incluir no score e no ranking</legend>
+      {% for eixo in eixos %}
+      <label><input type="checkbox" name="eixos" value="{{ loop.index }}" {% if loop.index0 in ativos %}checked{% endif %}> {{ eixo }}</label>
+      {% endfor %}
+    </fieldset>
+    <div class="actions">
+      <button class="button button-primary" type="submit">Aplicar eixos</button>
+      <button class="button button-quiet" type="button" data-eixos-todos>Usar todos</button>
+    </div>
+  </div>
+</details>
+{% endmacro %}
+
+{% macro perfil(item, eixos, ativos, numero) %}
+{% if item %}
+<div class="axis-bars">
+  {% for i in ativos %}
+  <div>
+    <span>{{ eixos[i] }}</span>
+    {% if item.eixos[i] is not none %}<meter min="0" max="100" value="{{ item.eixos[i] }}" aria-label="{{ eixos[i] }}"></meter>{% else %}<span></span>{% endif %}
+    <strong>{{ numero(item.eixos[i]) }}</strong>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p class="empty-result">Nenhum município corresponde aos filtros.</p>
+{% endif %}
+{% endmacro %}
+
+{% macro curva(dados, numero, tabela=True) %}
+{% if dados and dados.linhas %}
+{% set multi = dados.linhas|length > 1 %}
+{% set ultima_linha = dados.linhas[0] %}
+{% set ultimo_ponto = ultima_linha.vertices[-1] if ultima_linha.vertices else none %}
+<div class="score-timeline {{ 'comparison-timeline' if multi }}" data-timeline>
+  {% if not multi %}
+  <div class="timeline-reading" aria-live="polite">
+    <span data-leitura>{{ ultimo_ponto[0]|mes_br if ultimo_ponto else 'Selecione um ponto no gráfico' }}</span>
+    <strong data-leitura-score>{{ numero(ultimo_ponto[1]) if ultimo_ponto else '—' }} <small>pts</small></strong>
+  </div>
+  {% endif %}
+  {% if dados.datas|length > 1 %}
+  <div class="timeline-frame">
+    <div class="timeline-scale" aria-hidden="true">
+      <span>{{ numero(dados.alto, 0) if (dados.alto + dados.baixo) % 2 == 0 else numero(dados.alto, 1) }}</span>
+      <span>{{ numero((dados.alto + dados.baixo) / 2, 0) if (dados.alto + dados.baixo) % 2 == 0 else numero((dados.alto + dados.baixo) / 2, 1) }}</span>
+      <span>{{ numero(dados.baixo, 0) if (dados.alto + dados.baixo) % 2 == 0 else numero(dados.baixo, 1) }}</span>
+    </div>
+    <div class="timeline-plot" {% if multi %}data-plot-datas='{{ dados.posicoes|tojson }}'{% endif %}>
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <path class="chart-gridline" d="M0 0H100 M0 50H100 M0 100H100" />
+        {% for linha in dados.linhas %}
+        <path class="timeline-line {{ 'comparison-series-' ~ loop.index0 if multi }}" d="{{ linha.caminho }}" />
+        {% endfor %}
+      </svg>
+      {% if multi %}
+      <span class="comparison-month-guide" style="left:100%" aria-hidden="true"></span>
+      {% for linha in dados.linhas %}
+      {% set serie_idx = loop.index0 %}
+      {% for data, valor, x, y in linha.vertices %}
+      <span class="comparison-series-point comparison-series-{{ serie_idx }}" data-mes="{{ data }}" data-serie="{{ serie_idx }}" style="left:{{ '%.2f'|format(x) }}%;top:{{ '%.2f'|format(y) }}%" aria-hidden="true"></span>
+      {% if loop.last %}
+      <span class="comparison-selected-point comparison-series-{{ serie_idx }}" data-sel-serie="{{ serie_idx }}" style="left:{{ '%.2f'|format(x) }}%;top:{{ '%.2f'|format(y) }}%" aria-hidden="true"></span>
+      {% endif %}
+      {% endfor %}
+      {% endfor %}
+      {% else %}
+      {% for data, valor, x, y in ultima_linha.vertices %}
+      <button class="timeline-point" type="button" style="--x:{{ '%.2f'|format(x) }}%;--y:{{ '%.2f'|format(y) }}%" data-ponto="{{ data|mes_br }}" data-score="{{ numero(valor) }}" data-data="{{ data }}" aria-pressed="{{ 'true' if loop.last else 'false' }}" aria-label="{{ ultima_linha.nome }} {{ data|mes_br }}: {{ numero(valor) }} pontos"></button>
+      {% endfor %}
+      {% endif %}
+    </div>
+  </div>
+  <div class="timeline-dates" aria-hidden="true">
+    {% for data, x in dados.marcas_datas %}
+    <span style="--x:{{ '%.2f'|format(x) }}%">{{ data|mes_br }}</span>
+    {% endfor %}
+  </div>
+  {% if tabela %}
+  <details class="timeline-table">
+    <summary>Ver valores <span>({{ dados.datas|length }})</span></summary>
+    <div class="ranking-table-wrap" tabindex="0" aria-label="Valores do histórico">
+      <table class="ranking-table">
+        <thead><tr>{% if dados.linhas|length > 1 %}<th>Série</th>{% endif %}<th scope="col">Competência</th><th scope="col">Score</th></tr></thead>
+        <tbody>
+          {% for linha in dados.linhas %}
+          {% for data, valor, x, y in linha.vertices %}
+          <tr>{% if dados.linhas|length > 1 %}<td>{{ linha.nome }}</td>{% endif %}<th scope="row">{{ data|mes_br }}</th><td>{{ numero(valor) }}</td></tr>
+          {% endfor %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </details>
+  {% endif %}
+  {% endif %}
+</div>
+{% else %}
+<p class="empty-result">Histórico indisponível.</p>
+{% endif %}
+{% endmacro %}

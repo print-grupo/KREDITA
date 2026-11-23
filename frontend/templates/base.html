@@ -1,0 +1,108 @@
+{% if not parcial %}<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f7fb">
+  <title>{{ titulo }} · KREDITA</title>
+  <script>try{const t=localStorage.getItem('kredita-tema');document.documentElement.dataset.theme=t==='escuro'||(t!=='claro'&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light'}catch{}</script>
+  <link rel="stylesheet" href="/site/style.css?v=20261119-logo">
+  <script type="module" src="/site/atualizacao-parcial.js?v=20261118-acoes-mobile"></script>
+</head>
+<body data-page="{{ pagina }}">
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar" aria-label="Menu principal">
+      <a href="/site/" class="brand">
+        <span class="brand-mark"><img src="/site/logo.png" alt=""></span>
+        <span class="brand-name">KREDITA</span>
+      </a>
+      <nav class="side-nav" aria-label="Menu principal">
+        {% set icones = {'index': '⌂', 'ranking': '≡', 'favoritos': '☆', 'comparar': '⇄', 'guia': '?', 'metodologia': '▤', 'apostas': '◉'} %}
+        {% for chave in ['index','ranking','favoritos','comparar'] %}
+        <a class="nav-link {{ 'active' if pagina == chave }}" href="{{ '/site/' if chave == 'index' else '/site/' ~ chave ~ '.html' }}" {% if pagina == chave %}aria-current="page"{% endif %}>
+          <span class="nav-icon" aria-hidden="true">{{ icones[chave] }}</span>{{ paginas[chave] }}
+        </a>
+        {% endfor %}
+      </nav>
+      <div class="menu-caption second-caption">EXPLORAR</div>
+      <nav class="side-nav" aria-label="Explorar">
+        {% for chave in ['guia','metodologia','apostas'] %}
+        <a class="nav-link {{ 'active' if pagina == chave }}" href="/site/{{ chave }}.html" {% if pagina == chave %}aria-current="page"{% endif %}>
+          <span class="nav-icon" aria-hidden="true">{{ icones[chave] }}</span>{{ paginas[chave] }}
+        </a>
+        {% endfor %}
+      </nav>
+      <div class="sidebar-bottom">
+        <span class="status-dot"></span>
+        <div><strong>Ambiente de análise</strong><small>Dados municipais</small></div>
+      </div>
+    </aside>
+    <button class="menu-shade" type="button" data-menu aria-label="Fechar menu" tabindex="-1" hidden></button>
+    <div class="main-area">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="hamburger" type="button" data-menu aria-controls="sidebar" aria-expanded="false" aria-label="Menu principal"><span></span><span></span><span></span></button>
+          <div class="breadcrumb"><strong>{{ titulo }}</strong></div>
+        </div>
+        <div class="topbar-actions">
+          <button id="theme-toggle" class="button button-outline" data-theme-toggle type="button" aria-label="Alternar modo escuro" title="Alternar tema">
+            <span class="theme-moon" aria-hidden="true">☾</span><span class="theme-sun" aria-hidden="true">☀</span>
+          </button>
+          <button class="button button-outline" data-refresh type="button"><span aria-hidden="true">↻</span> Atualizar dados</button>
+        </div>
+      </header>
+      <dialog id="comparacao-busca" aria-labelledby="dialog-title">
+        <div class="dialog-heading">
+          <h2 id="dialog-title">Adicionar à comparação</h2>
+          <form method="dialog"><button class="icon-btn" aria-label="Fechar">×</button></form>
+        </div>
+        <form data-sugestoes action="/site/sugestoes" method="get">
+          <label class="input-label">Buscar município
+            <input name="busca" type="search" placeholder="Digite o nome ou código IBGE" autocomplete="off">
+          </label>
+          <div class="actions" style="margin-top:10px">
+            <button class="button button-primary" type="submit">Buscar</button>
+          </div>
+        </form>
+        <div data-sugestoes-resultado></div>
+        <div class="detail-actions" style="margin-top:14px;margin-bottom:0">
+          <a class="button button-outline" href="/site/comparar.html">Abrir comparação →</a>
+        </div>
+      </dialog>
+      <main id="main" class="content">
+        {% if pagina == 'index' %}
+        <section id="map-section" class="panel map-panel" aria-labelledby="map-title">
+          <div class="panel-heading">
+            <div>
+              <h2 id="map-title">Mapa municipal</h2>
+              <p>O filtro de UF aproxima o mapa e define a lista de municípios.</p>
+            </div>
+          </div>
+          <div data-map-header-slot></div>
+          <div id="municipal-map" class="municipal-map">
+            <p id="map-load" data-map-status role="status"></p>
+            <div class="map-controls">
+              <button class="row-action" type="button" data-zoom-in aria-label="Ampliar mapa">+</button>
+              <button class="row-action" type="button" data-zoom-out aria-label="Reduzir mapa">−</button>
+              <button class="row-action" type="button" data-map-reset aria-label="Mostrar todo o Brasil" title="Mostrar todo o Brasil">⌂</button>
+            </div>
+            <div class="map-key">
+              <strong id="map-scale-title">Score do recorte</strong>
+              <ul id="map-legend" aria-label="Faixas da escala"></ul>
+            </div>
+          </div>
+          <p class="map-credit">Faixas por quintis nacionais da métrica selecionada. Limites do IBGE.</p>
+        </section>
+        {% endif %}
+        <p id="retorno" class="subtitle" role="status"></p>
+{% endif %}
+<div id="conteudo" data-eixos="{{ eixos_url }}" data-uf="{{ filtros.uf }}" data-id="{{ selecionado.id if selecionado else '' }}">
+{% block conteudo %}{% endblock %}
+</div>
+{% if not parcial %}
+      </main>
+      <footer class="page-footer"><span>© KREDITA · Score territorial</span><span>Metodologia KREDITA</span></footer>
+    </div>
+  </div>
+</body>
+</html>{% endif %}

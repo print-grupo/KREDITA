@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% from '_componentes.html' import cabecalho, acoes, seletor_eixos, perfil, curva %}
+{% block conteudo %}
+{{ cabecalho('Comparar municípios', 'Compare score, posição, eixos e histórico de até três municípios.') }}
+<div class="detail-actions">
+  <div class="actions">
+    <button class="button button-primary" type="button" data-open>+ Adicionar município</button>
+    <form data-parcial method="get">{{ seletor_eixos(eixos, ativos) }}</form>
+  </div>
+  {% if perfis %}
+  <a class="button button-outline" data-exportar href="{{ exportar() }}">Exportar CSV</a>
+  {% endif %}
+</div>
+
+{% if perfis %}
+<section class="compare-grid" aria-label="Municípios selecionados">
+  {% for card in perfis %}
+  {% set item = card.item %}
+  <article class="compare-card">
+    <div class="panel compare-heading">
+      <h2>{{ item.nome }} · {{ item.uf }}</h2>
+      <div class="compare-score">
+        <strong>{{ numero(item.score) }}</strong>
+        <span>/ 100 · {{ (item.position ~ 'º no Brasil') if item.position else 'Sem posição' }}</span>
+      </div>
+      <div class="comparison-benchmark">
+        <span>Mediana de referência</span>
+        <strong>{{ numero(card.referencia) }} <small>/ 100</small></strong>
+        <small>{{ card.grupo }} municípios{% if item.score is not none and card.referencia is not none %} · Diferença {{ numero(item.score - card.referencia) }} pontos{% endif %}</small>
+      </div>
+      <div class="actions">
+        {{ acoes(item, favoritos, false) }}
+        <button class="button button-danger" type="button" data-remove="{{ item.id }}">Remover</button>
+      </div>
+    </div>
+    <section class="panel chart-panel">
+      <h2>Perfil por eixo</h2>
+      {{ perfil(item, eixos, ativos, numero) }}
+    </section>
+    <section class="panel chart-panel">
+      <h2>Histórico do score</h2>
+      <div class="history-series">
+        <h3>Edições publicadas</h3>
+        {{ curva(card.publicado, numero) }}
+      </div>
+      <div class="history-series">
+        <h3>Simulação SCR</h3>
+        {{ curva(card.scr, numero) }}
+      </div>
+    </section>
+  </article>
+  {% endfor %}
+</section>
+{% else %}
+<p class="panel copy-panel">Use o botão + para adicionar até três municípios.</p>
+{% endif %}
+
+{% if perfis|length >= 2 %}
+<section class="panel ranking-panel" id="comparison-history" data-sobreposto>
+  <h2>Histórico lado a lado</h2>
+  {% if diferencas %}
+  <div class="comparison-history-filters">
+    <label class="input-label">Competência
+      <select data-diferencas>
+        {% for data in diferencas %}
+        <option value="{{ data }}" {% if loop.last %}selected{% endif %}>{{ data|mes_br }}</option>
+        {% endfor %}
+      </select>
+    </label>
+  </div>
+  {% endif %}
+  {{ curva(sobreposto, numero, false) }}
+  {% if diferencas %}
+  <div class="comparison-history-reading" aria-live="polite">
+    {% for data, info in diferencas.items() %}
+    <div data-competencia="{{ data }}" {% if not loop.last %}hidden{% endif %}>
+      <ul class="comparison-history-values">
+        {% for nome, valor in info.valores %}
+        <li>
+          <span class="comparison-series-{{ loop.index0 }}"><i aria-hidden="true"></i> {{ nome }}</span>
+          <strong>{{ (numero(valor) ~ ' pts') if valor is not none else 'Sem score' }}</strong>
+        </li>
+        {% endfor %}
+      </ul>
+      <h3>Diferença no mês</h3>
+      {% if info.pares %}
+      <ul class="comparison-history-differences">
+        {% for par in info.pares %}<li>{{ par }}</li>{% endfor %}
+      </ul>
+      {% else %}
+      <p class="empty-result">São necessários dois scores na competência para calcular a diferença.</p>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

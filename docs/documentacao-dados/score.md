@@ -321,12 +321,12 @@ z = x × (1 − φ)
 **3. Normalização:**
 
 ```text
-t = clip(z; 2000; 22000)
+t = clip(z; 10000; 42000)
 
-N11 = 100 × ln(22000 / t) / ln(22000 / 2000)
+N11 = 100 × ln(42000 / t) / ln(42000 / 10000)
 ```
 
-Menores valores ajustados recebem notas maiores no eixo Inclusão.
+Menores valores ajustados recebem notas maiores no eixo Inclusão. Valores de **z até R$ 10.000** recebem nota **100**; valores **a partir de R$ 42.000** recebem nota **0**. Entre os limites, a normalização é logarítmica inversa.
 
 **Fontes:** BCB, SCR.data — dezembro de 2025; IBGE, SIDRA 6579 — população estadual de 2025.
 
@@ -397,10 +397,10 @@ x = 100 × pessoas de 18 a 64 anos na força de trabalho
 **2. Normalização:**
 
 ```text
-N14 = clip(100 × (x − 42) / 28; 0; 100)
+N14 = clip(100 × (x − 25) / 55; 0; 100)
 ```
 
-Maior participação recebe nota maior.
+Maior participação recebe nota maior. Valores de **x até 25%** recebem nota **0**; valores **a partir de 80%** recebem nota **100**. Entre os limites, a normalização é linear crescente.
 
 **Fonte:** IBGE, Censo 2022 — SIDRA, tabela 6580, agregação dos grupos de 18–24 e 25–64 anos.
 
@@ -492,4 +492,4 @@ Score = (E1 + E2 + E3 + E4) / 4
 
 Para aprofundar a leitura, consulte o PDF com o detalhamento das fórmulas, dos pesos, das etapas de cálculo e dos exemplos de aplicação:
 
-📄 [Ler o PDF — Metodologia do Score KREDITA V4](https://cdn.discordapp.com/attachments/1544375422517772355/1561155747415334982/KREDITA_Metodologia_Score_V4.pdf?ex=6ad5fbd7&is=6ad4aa57&hm=704d2a1f7626c64a71d518668762d2bb08f39a97f349cd26ae57ba4c57f10a1f&)
+📄 [Ler ou baixar o PDF — Metodologia do Score KREDITA V4.1](https://cdn.discordapp.com/attachments/1544375422517772355/1565371349386657832/KREDITA_Metodologia_Score_V4_1.pdf?ex=6ae4a92c&is=6ae357ac&hm=2315eb262fcfcfa20477697244cc74777b6ffaa9d63b573615bbec7fa7ee690e&)

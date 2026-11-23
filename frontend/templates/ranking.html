@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% from '_componentes.html' import cabecalho, tabela, seletor_eixos %}
+{% block conteudo %}
+{{ cabecalho('Ranking municipal', 'Encontre municípios e ajuste a ordem dos resultados.') }}
+<section class="panel ranking-panel" aria-label="Ranking municipal">
+  <form data-parcial data-auto-submit method="get" class="rank-filters">
+    <label class="input-label">Buscar município
+      <input type="search" name="busca" value="{{ filtros.busca }}" placeholder="Digite o nome ou código IBGE" autocomplete="off">
+    </label>
+    <label class="input-label">UF
+      <select name="uf">
+        <option value="">Todas as UFs</option>
+        {% for uf in ufs %}<option value="{{ uf }}" {% if filtros.uf == uf %}selected{% endif %}>{{ uf }}</option>{% endfor %}
+      </select>
+    </label>
+    <label class="input-label">População
+      <select name="porte">
+        <option value="">Todos os portes</option>
+        {% for chave, rotulo in portes %}
+        <option value="{{ chave }}" {% if filtros.porte == chave %}selected{% endif %}>{{ rotulo }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="input-label">Ordenar por
+      <select name="ordem">
+        {% for valor, nome in ordens %}
+        <option value="{{ valor }}" {% if filtros.ordem == valor %}selected{% endif %}>{{ nome }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    {{ seletor_eixos(eixos, ativos) }}
+    {% set qtd_minimos = filtros.minimos | select('ne', none) | list | length %}
+    <details class="ranking-triage">
+      <summary class="button button-outline">Mínimos por eixo {% if qtd_minimos %}<span id="ranking-minimum-count">{{ qtd_minimos }}</span>{% endif %}</summary>
+      <div class="filter-popover">
+        <fieldset>
+          <legend>Nota mínima por eixo</legend>
+          <p>Preencha de 0 a 100. Os mínimos filtram os resultados e preservam a posição nacional.</p>
+          <div class="ranking-minimums">
+            {% for eixo in eixos %}
+            <label class="input-label">{{ eixo }}
+              <input type="number" name="min{{ loop.index }}" min="0" max="100" step="any" placeholder="Sem mínimo" value="{{ filtros.minimos[loop.index0] if filtros.minimos[loop.index0] is not none else '' }}">
+            </label>
+            {% endfor %}
+          </div>
+        </fieldset>
+        <div class="actions">
+          <button class="button button-primary" type="submit">Aplicar</button>
+          <button class="button button-outline" type="button" data-save>Salvar recorte</button>
+          <button class="button button-quiet" type="button" data-restore>Carregar salvo</button>
+        </div>
+      </div>
+    </details>
+    <button class="sr-only" type="submit">Aplicar filtros</button>
+    <a class="button button-quiet" data-parcial href="{{ url_pagina }}?eixos={{ eixos_url }}">Limpar filtros</a>
+  </form>
+  <div class="ranking-toolbar">
+    <p id="ranking-count" aria-live="polite">{{ numero(total, 0) }} {{ 'município' if total == 1 else 'municípios' }}</p>
+    <div class="actions">
+      <div class="actions" aria-label="Paginação rápida">
+        {% if indice > 1 %}<a class="row-action" data-pagina="{{ indice-1 }}" href="{{ paginar(indice-1) }}" aria-label="Página anterior" title="Página anterior">‹</a>{% else %}<button class="row-action" type="button" disabled aria-label="Página anterior">‹</button>{% endif %}
+        <span class="subtitle" aria-live="polite">{{ indice }} / {{ total_paginas }}</span>
+        {% if indice < total_paginas %}<a class="row-action" data-pagina="{{ indice+1 }}" href="{{ paginar(indice+1) }}" aria-label="Próxima página" title="Próxima página">›</a>{% else %}<button class="row-action" type="button" disabled aria-label="Próxima página">›</button>{% endif %}
+      </div>
+      <button class="button button-outline" type="button" data-share>Compartilhar recorte</button>
+    </div>
+  </div>
+  {{ tabela(itens, favoritos, score_label, numero) }}
+  <div class="detail-actions" style="margin-top:14px;margin-bottom:0">
+    {% if indice > 1 %}<a class="button button-outline" data-pagina="{{ indice-1 }}" href="{{ paginar(indice-1) }}">Anterior</a>{% else %}<button class="button button-outline" type="button" disabled>Anterior</button>{% endif %}
+    <form data-parcial method="get" class="actions" aria-label="Ir para página">
+      {% for chave, valor in [('busca', filtros.busca), ('uf', filtros.uf), ('porte', filtros.porte), ('ordem', filtros.ordem), ('eixos', eixos_url)] %}
+      {% if valor %}<input type="hidden" name="{{ chave }}" value="{{ valor }}">{% endif %}
+      {% endfor %}
+      {% for min_v in filtros.minimos %}
+      {% if min_v is not none %}<input type="hidden" name="min{{ loop.index }}" value="{{ min_v }}">{% endif %}
+      {% endfor %}
+      <label class="sr-only" for="ranking-page-input">Número da página</label>
+      <input id="ranking-page-input" type="number" name="pagina" min="1" max="{{ total_paginas }}" value="{{ indice }}" style="width:74px;min-height:40px;padding:6px 8px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--ink);text-align:center">
+      <span id="ranking-page" class="subtitle" aria-live="polite">/ {{ total_paginas }}</span>
+      <button class="button button-outline" type="submit">Ir</button>
+    </form>
+    {% if indice < total_paginas %}<a class="button button-outline" data-pagina="{{ indice+1 }}" href="{{ paginar(indice+1) }}">Próxima</a>{% else %}<button class="button button-outline" type="button" disabled>Próxima</button>{% endif %}
+  </div>
+</section>
+{% endblock %}
