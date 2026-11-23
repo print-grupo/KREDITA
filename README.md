@@ -30,7 +30,7 @@ Neste projeto, nosso objetivo é explorar e transformar dados econômicos públi
 | --- | --- | --- |
 | 07/09/2026 - 27/09/2026 | [![Sprint 1](https://img.shields.io/badge/Sprint%201-Documenta%C3%A7%C3%A3o-36a2eb?style=flat&logo=markdown&logoColor=white)](./docs/scrum/backlog/sprint-1.md) | [![YouTube](https://img.shields.io/badge/YouTube-Assista%20ao%20v%C3%ADdeo-FF0000?style=flat&logo=youtube&logoColor=white)](https://youtu.be/ADqZf03HH-4) |
 | 05/10/2026 - 25/10/2026 | [![Sprint 2](https://img.shields.io/badge/Sprint%202-Documenta%C3%A7%C3%A3o-36a2eb?style=flat&logo=markdown&logoColor=white)](./docs/scrum/backlog/sprint-2.md) | [![YouTube](https://img.shields.io/badge/YouTube-Assista%20ao%20vídeo-red?style=flat&logo=youtube&logoColor=white)](https://www.youtube.com/watch?v=owJyNrZKpBI) |
-| 02/11/2026 - 22/11/2026 | [![Sprint 3](https://img.shields.io/badge/Sprint%203-Documenta%C3%A7%C3%A3o-36a2eb?style=flat&logo=markdown&logoColor=white)](./docs/scrum/backlog/sprint-3.md) | [Assistir no YouTube](https://www.google.com/search?q=link-para-video) |
+| 02/11/2026 - 22/11/2026 | [![Sprint 3](https://img.shields.io/badge/Sprint%203-Documenta%C3%A7%C3%A3o-36a2eb?style=flat&logo=markdown&logoColor=white)](./docs/scrum/backlog/sprint-3.md) | [![YouTube](https://img.shields.io/badge/YouTube-Assista%20ao%20vídeo-red?style=flat&logo=youtube&logoColor=white)](https://youtu.be/7Np6BT1NMD0)
 
 ## Google Colab da equipe
 
@@ -177,7 +177,7 @@ Uma tarefa ou User Story será considerada concluída quando:
 
 ## Manual do Usuário
 
-Consulte o [Manual do Usuário](docs/manual.md) para aprender a utilizar os filtros, explorar o mapa, consultar o ranking, comparar municípios, salvar favoritos e exportar os resultados.
+Consulte o [Manual do Usuário](docs/documentacao-dados/manual.md) para aprender a utilizar os filtros, explorar o mapa, consultar o ranking, comparar municípios, salvar favoritos e exportar os resultados.
 
 ---
 
@@ -206,4 +206,4 @@ Abra [o painel](http://127.0.0.1:8788/site/). O SQLite é criado no volume Docke
 
 - `backend/` reúne Flask, importador, dados de carga, migrações e testes.
 - `frontend/` reúne os templates Jinja e os arquivos estáticos, separados por tipo.
-- `docs/` reúne [operação](docs/operacao.md), [metodologia](docs/documentacao-dados/score.md), [convenções do Git](docs/git.md) e [backlog das sprints](docs/scrum/backlog/).
+- `docs/` reúne [operação](docs/documentacao-dados/operacao.md), [metodologia](docs/documentacao-dados/score.md), [convenções do Git](docs/git.md) e [backlog das sprints](docs/scrum/backlog/).

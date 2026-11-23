@@ -420,4 +420,4 @@ Esse conteúdo não participa do cálculo do score ou do cofator.
 - [Backend Flask](../../backend/app.py)
 - [Consultas da aplicação](../../backend/consultas.py)
 - [Configuração Docker](../../Dockerfile)
-- [Guia de operação](../operacao.md)
+- [Guia de operação](operacao.md)
