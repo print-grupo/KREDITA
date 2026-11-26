@@ -4,6 +4,8 @@
 Conceder crédito para populações historicamente recusadas por grandes instituições financeiras exige ir além da visão tradicional de risco: **exige identificar onde residem o consumo reprimido e a capacidade real de pagamento sustentável.**
 Neste projeto, nosso objetivo é explorar e transformar dados econômicos públicos do **Banco Central do Brasil (BCB)** em inteligência territorial para apoiar decisões de crédito mais inclusivas e responsáveis.
 
+Acesse o [site do KREDITA](https://kredita.duckdns.org/) pelo navegador.
+
 ---
 
 # Product Backlog
